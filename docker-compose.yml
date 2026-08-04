@@ -1,0 +1,22 @@
+# Uses the MongoDB already running on the host, not a container.
+# The host mongod must bind beyond 127.0.0.1 for this to connect.
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    environment:
+      STARDANCE_MONGO_URL: mongodb://host.docker.internal:27017
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  collector:
+    build: .
+    restart: unless-stopped
+    command: python -m src.collector.run
+    environment:
+      STARDANCE_MONGO_URL: mongodb://host.docker.internal:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

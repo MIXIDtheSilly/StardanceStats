@@ -1,0 +1,319 @@
+from __future__ import annotations
+
+import logging
+from datetime import datetime, timedelta, timezone
+from typing import Any, Iterable
+
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import ReplaceOne, UpdateOne
+
+from ..config import settings
+from ..parsers.common import ParseResult, utcnow
+
+log = logging.getLogger(__name__)
+
+# Counters that only go up in reality. A large fall means a parse failure;
+# a small one is ordinary moderation, such as a deleted devlog.
+MONOTONIC = ("devlogs", "total_hours", "stardust_total", "ships")
+
+# Fields whose change is worth a new snapshot.
+TRACKED = (
+    "devlogs", "total_hours", "followers", "likes", "comments",
+    "reposts", "views", "ships", "stardust_total", "latest_multiplier",
+)
+
+
+class AnomalyRejected(Exception):
+    """A parsed page looked structurally fine but its numbers did not."""
+
+
+def build_stats(
+    project: dict[str, Any], devlogs: list[dict[str, Any]], ships: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Roll cards up into the project's stat block."""
+    summed_hours = sum(d.get("duration_seconds") or 0 for d in devlogs) / 3600.0
+    multipliers = [s["multiplier"] for s in ships if s.get("multiplier") is not None]
+    payouts = [s["payout"] for s in ships if s.get("payout") is not None]
+    latest = max(ships, key=lambda s: s.get("shipped_at") or _EPOCH, default=None)
+
+    # Prefer the project's own hours figure (it counts devlogs we cannot see,
+    # e.g. deleted ones) and fall back to what we summed.
+    total_hours = project.get("total_hours")
+    if total_hours is None:
+        total_hours = round(summed_hours, 2)
+
+    stardust_total = sum(payouts) if payouts else 0
+
+    stats: dict[str, Any] = {
+        "devlogs": project.get("devlogs_count") or len(devlogs),
+        "total_hours": float(total_hours),
+        "summed_hours": round(summed_hours, 2),
+        "followers": project.get("followers"),
+        "likes": _sum(devlogs, "likes"),
+        "comments": _sum(devlogs, "comments"),
+        "reposts": _sum(devlogs, "reposts"),
+        "views": _sum(devlogs, "views"),
+        "ships": len(ships),
+        "stardust_total": stardust_total,
+        "latest_multiplier": latest.get("multiplier") if latest else None,
+        "avg_multiplier": round(sum(multipliers) / len(multipliers), 3) if multipliers else None,
+    }
+    stats["stardust_per_hour"] = (
+        round(stardust_total / total_hours, 2) if total_hours else None
+    )
+    return stats
+
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+
+def _sum(rows: Iterable[dict[str, Any]], key: str) -> int:
+    return sum(r.get(key) or 0 for r in rows)
+
+
+def check_anomalies(
+    new_stats: dict[str, Any], previous: dict[str, Any] | None, result: ParseResult
+) -> list[str]:
+    """Return reasons this snapshot should be rejected. Empty means accept."""
+    reasons: list[str] = []
+
+    if previous:
+        for key in MONOTONIC:
+            old, new = previous.get(key), new_stats.get(key)
+            if not isinstance(old, (int, float)) or not isinstance(new, (int, float)):
+                continue
+            if old > 0 and new < old * (1 - settings.anomaly_drop_threshold):
+                reasons.append(f"{key} fell {old} -> {new}")
+
+        # A field we used to be able to read going absent is the signature of
+        # a renamed selector, even when nothing else looks wrong.
+        for key in TRACKED:
+            if previous.get(key) is not None and new_stats.get(key) is None:
+                reasons.append(f"{key} became unreadable")
+
+    if result.missing:
+        reasons.append(f"unparsed fields: {sorted(result.missing)}")
+
+    return reasons
+
+
+async def ingest_project(
+    db: AsyncIOMotorDatabase,
+    result: ParseResult,
+    *,
+    now: datetime | None = None,
+    force_snapshot: bool = False,
+) -> dict[str, Any]:
+    """Persist one parsed project page. Returns a summary of what changed."""
+    now = now or utcnow()
+    project = result.data["project"]
+    devlogs = result.data["devlogs"]
+    ships = result.data["ships"]
+    pid = project["_id"]
+
+    stats = build_stats(project, devlogs, ships)
+    existing = await db.projects.find_one({"_id": pid})
+    previous_stats = (existing or {}).get("stats")
+
+    reasons = check_anomalies(stats, previous_stats, result)
+    if reasons and existing is not None:
+        await _log_crawl(db, pid, "anomaly", now, reasons=reasons)
+        raise AnomalyRejected(f"project {pid}: " + "; ".join(reasons))
+
+    first_ingest = existing is None
+
+    doc = {
+        "_id": pid,
+        "title": project.get("title"),
+        "description": project.get("description"),
+        "owner_username": project.get("owner_username"),
+        "members": project.get("members", []),
+        "is_hardware": project.get("is_hardware", False),
+        "repo_url": project.get("repo_url"),
+        "demo_url": project.get("demo_url"),
+        "banner_url": project.get("banner_url"),
+        "owner_avatar_url": project.get("owner_avatar_url"),
+        "stats": stats,
+        "last_crawled": now,
+    }
+    if first_ingest:
+        doc["first_seen"] = now
+        doc["created_at_estimate"] = min(
+            (d["posted_at"] for d in devlogs if d.get("posted_at")), default=None
+        )
+
+    changed = _changed_keys(previous_stats, stats)
+    if changed or first_ingest:
+        doc["last_changed"] = now
+
+    await db.projects.update_one({"_id": pid}, {"$set": doc}, upsert=True)
+
+    await _write_devlogs(db, devlogs, now)
+    await _write_ships(db, ships, now)
+
+    wrote_snapshot = False
+    if force_snapshot or first_ingest or changed or await _heartbeat_due(db, pid, now):
+        await db.project_snapshots.insert_one(_snapshot(pid, stats, now))
+        wrote_snapshot = True
+
+    backfilled = 0
+    if first_ingest:
+        backfilled = await backfill_project_history(db, pid, devlogs, ships, stats, now)
+
+    await _log_crawl(
+        db, pid, "ok", now,
+        changed=sorted(changed), warnings=result.warnings, backfilled=backfilled,
+    )
+
+    return {
+        "project_id": pid,
+        "first_ingest": first_ingest,
+        "devlogs": len(devlogs),
+        "ships": len(ships),
+        "changed": sorted(changed),
+        "snapshot": wrote_snapshot,
+        "backfilled": backfilled,
+        "warnings": result.warnings,
+    }
+
+
+def _changed_keys(previous: dict[str, Any] | None, current: dict[str, Any]) -> set[str]:
+    if previous is None:
+        return set(TRACKED)
+    return {k for k in TRACKED if previous.get(k) != current.get(k)}
+
+
+def _snapshot(pid: int, stats: dict[str, Any], ts: datetime) -> dict[str, Any]:
+    doc: dict[str, Any] = {"ts": ts, "pid": pid}
+    for key in TRACKED:
+        value = stats.get(key)
+        if value is not None:
+            doc[key] = value
+    return doc
+
+
+async def _heartbeat_due(db: AsyncIOMotorDatabase, pid: int, now: datetime) -> bool:
+    cutoff = now - timedelta(hours=settings.snapshot_heartbeat_hours)
+    latest = await db.project_snapshots.find_one(
+        {"pid": pid, "ts": {"$gte": cutoff}}, projection={"_id": 1}
+    )
+    return latest is None
+
+
+async def _write_devlogs(
+    db: AsyncIOMotorDatabase, devlogs: list[dict[str, Any]], now: datetime
+) -> None:
+    if not devlogs:
+        return
+    ops = []
+    for d in devlogs:
+        doc = dict(d)
+        doc["username_lower"] = (doc.get("username") or "").lower() or None
+        doc["last_crawled"] = now
+        ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
+    await db.devlogs.bulk_write(ops, ordered=False)
+
+
+async def _write_ships(
+    db: AsyncIOMotorDatabase, ships: list[dict[str, Any]], now: datetime
+) -> None:
+    if not ships:
+        return
+    ops = []
+    for s in ships:
+        doc = dict(s)
+        doc["username_lower"] = (doc.get("username") or "").lower() or None
+        doc["last_crawled"] = now
+        ops.append(ReplaceOne({"_id": doc["_id"]}, doc, upsert=True))
+    await db.ships.bulk_write(ops, ordered=False)
+
+
+async def _log_crawl(
+    db: AsyncIOMotorDatabase, pid: int, status: str, ts: datetime, **extra: Any
+) -> None:
+    try:
+        await db.crawl_log.insert_one(
+            {"ts": ts, "kind": "project", "ref_id": pid, "status": status, **extra}
+        )
+    except Exception:  # logging must never break ingest
+        log.exception("crawl_log write failed")
+
+
+async def backfill_project_history(
+    db: AsyncIOMotorDatabase,
+    pid: int,
+    devlogs: list[dict[str, Any]],
+    ships: list[dict[str, Any]],
+    current: dict[str, Any],
+    now: datetime,
+) -> int:
+    """Reconstruct daily history from timestamps the page already gave us.
+
+    Devlog dates yield the devlog-count and hours curves, ship dates yield the
+    payout curve. Engagement exposes only current totals, so those series
+    cannot be reconstructed and start at first crawl.
+    """
+    dated = sorted(
+        ((d["posted_at"], d.get("duration_seconds") or 0) for d in devlogs if d.get("posted_at")),
+        key=lambda x: x[0],
+    )
+    ship_points = sorted(
+        ((s["shipped_at"], s.get("payout") or 0) for s in ships if s.get("shipped_at")),
+        key=lambda x: x[0],
+    )
+    if not dated and not ship_points:
+        return 0
+
+    start = min([d[0] for d in dated] + [s[0] for s in ship_points])
+    days = _day_range(start, now)
+
+    docs: list[dict[str, Any]] = []
+    di = si = 0
+    devlog_count = 0
+    seconds = 0
+    ship_count = 0
+    stardust = 0
+
+    for day in days:
+        end = day + timedelta(days=1)
+        while di < len(dated) and dated[di][0] < end:
+            devlog_count += 1
+            seconds += dated[di][1]
+            di += 1
+        while si < len(ship_points) and ship_points[si][0] < end:
+            ship_count += 1
+            stardust += ship_points[si][1]
+            si += 1
+
+        docs.append({
+            "ts": day,
+            "pid": pid,
+            "synthetic": True,
+            "devlogs": devlog_count,
+            "total_hours": round(seconds / 3600.0, 2),
+            "ships": ship_count,
+            "stardust_total": stardust,
+        })
+
+    if not docs:
+        return 0
+
+    # Drop the final synthetic day; the live snapshot written this run already
+    # covers today with observed (not reconstructed) values.
+    docs = [d for d in docs if d["ts"].date() < now.date()]
+    if not docs:
+        return 0
+
+    await db.project_snapshots.insert_many(docs, ordered=False)
+    log.info("backfilled %d synthetic days for project %s", len(docs), pid)
+    return len(docs)
+
+
+def _day_range(start: datetime, end: datetime) -> list[datetime]:
+    day = start.astimezone(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    last = end.astimezone(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    out = []
+    while day <= last:
+        out.append(day)
+        day += timedelta(days=1)
+    return out

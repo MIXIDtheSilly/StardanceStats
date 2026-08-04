@@ -1,1 +1,19 @@
-/!Stardance
+/Stardance
+
+.vscode/
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.pytest_cache/
+*.egg-info/
+
+# scratch output from manual crawls
+live.html
+hist.json
+
+# mixid stuff
+mine/
+
+# temp
+/tests/fixtures/
