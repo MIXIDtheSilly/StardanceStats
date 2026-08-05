@@ -5,7 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from src.ingest.project import _day_range, build_stats, check_anomalies
+from src.ingest.project import (
+    _day_range,
+    build_stats,
+    check_anomalies,
+    estimate_unpaid,
+    payout_hours,
+)
 from src.parsers import parse_project_page
 from src.parsers.common import ParseResult
 
@@ -44,8 +50,66 @@ def test_hours_prefer_the_pages_own_figure(stats):
     assert stats["summed_hours"] == pytest.approx(256.0, abs=1.0)
 
 
-def test_stardust_per_hour(stats):
-    assert stats["stardust_per_hour"] == pytest.approx(3042 / 256.0, abs=0.01)
+def test_shipped_hours_sum_the_ship_cards(stats):
+    assert stats["shipped_hours"] == pytest.approx(165.0, abs=0.01)   # 133 + 32
+    assert stats["paid_hours"] == pytest.approx(165.0, abs=0.01)      # both paid out
+
+
+def test_the_rate_is_over_paid_hours_only(stats):
+    """Same basis on both sides: payouts over the hours those payouts were for."""
+    assert stats["stardust_per_paid_hour"] == pytest.approx(3042 / 165.0, abs=0.01)
+    assert "stardust_per_hour" not in stats, "mixed-basis rate is gone for good"
+
+
+def test_a_ship_in_review_does_not_dilute_the_rate(parsed):
+    """It has hours but no payout yet, so it belongs in shipped, not paid."""
+    ships = parsed.data["ships"]
+    in_review = dict(ships[0], _id=999, payout=None, multiplier=None, hours_at_ship=80.0)
+    stats = build_stats(parsed.data["project"], parsed.data["devlogs"], ships + [in_review])
+
+    assert stats["shipped_hours"] == pytest.approx(245.0, abs=0.01)   # 165 + 80
+    assert stats["paid_hours"] == pytest.approx(165.0, abs=0.01)
+    assert stats["stardust_per_paid_hour"] == pytest.approx(3042 / 165.0, abs=0.01)
+
+
+def test_unpaid_hours_are_valued_at_the_realised_rate(stats):
+    unpaid = stats["summed_hours"] - 165.0
+    assert stats["unpaid_hours"] == pytest.approx(unpaid, abs=0.01)
+
+    expected = round(unpaid * (3042 / 165.0))
+    assert stats["estimated_pending_stardust"] == expected
+    assert stats["estimated_total_stardust"] == 3042 + expected
+
+
+def test_nothing_paid_out_means_no_rate_to_extrapolate_from():
+    stats = build_stats({"devlogs_count": 1, "total_hours": 40.0}, [], [])
+    assert stats["unpaid_hours"] == 0.0             # no devlogs parsed, so no hours
+    assert stats["estimated_pending_stardust"] is None
+    assert stats["estimated_total_stardust"] is None
+
+
+def test_estimate_never_reports_negative_unpaid_hours():
+    """hours_at_ship is frozen upstream, so a later deletion can exceed our sum."""
+    estimate = estimate_unpaid(600, logged_hours=30.0, paid_hours=32.0)
+    assert estimate["unpaid_hours"] == 0.0
+    assert estimate["estimated_pending_stardust"] == 0
+    assert estimate["estimated_total_stardust"] == 600
+
+
+def test_payout_hours_recover_the_capped_basis(parsed):
+    """Payout runs on hours capped at 10h per devlog, which the card never
+    shows. Ship 1 has one devlog over the cap, so its payout basis sits below
+    the 133h it displays; ship 2 has none and lands on its 32h."""
+    s1, s2 = sorted(parsed.data["ships"], key=lambda s: s["shipped_at"])
+
+    assert payout_hours(s1) == pytest.approx(121.8, abs=0.1)
+    assert payout_hours(s1) < s1["hours_at_ship"]
+    assert payout_hours(s2) == pytest.approx(s2["hours_at_ship"], abs=0.3)
+
+
+def test_payout_hours_is_none_without_both_inputs():
+    assert payout_hours({"payout": 633, "multiplier": None}) is None
+    assert payout_hours({"payout": None, "multiplier": 19.65}) is None
 
 
 def test_hours_fall_back_to_summed_when_header_is_absent(parsed):
@@ -57,7 +121,8 @@ def test_hours_fall_back_to_summed_when_header_is_absent(parsed):
 def test_empty_project_does_not_divide_by_zero():
     stats = build_stats({"devlogs_count": 0, "total_hours": 0}, [], [])
     assert stats["stardust_total"] == 0
-    assert stats["stardust_per_hour"] is None
+    assert stats["stardust_per_paid_hour"] is None
+    assert stats["shipped_hours"] is None
     assert stats["latest_multiplier"] is None
 
 

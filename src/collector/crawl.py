@@ -66,6 +66,12 @@ async def crawl_project(
         await _touch_frontier(db, frontier_id, project_id, error=f"anomaly: {exc}")
         return {"project_id": project_id, "status": "anomaly", "error": str(exc)}
 
+    # A project's rows feed its members' ranking totals.
+    from ..ingest import recompute_user_totals
+
+    for user_id in summary.get("linked_users", []):
+        await recompute_user_totals(db, user_id)
+
     await _touch_frontier(
         db, frontier_id, project_id,
         etag=response.etag, last_modified=response.last_modified,
@@ -83,8 +89,10 @@ async def crawl_projects(
 async def _touch_frontier(
     db: AsyncIOMotorDatabase,
     frontier_id: str,
-    project_id: int,
+    ref_id: int,
     *,
+    kind: str = "project",
+    url: str | None = None,
     etag: str | None = None,
     last_modified: str | None = None,
     error: str | None = None,
@@ -92,9 +100,9 @@ async def _touch_frontier(
 ) -> None:
     now = utcnow()
     update: dict[str, Any] = {
-        "kind": "project",
-        "ref_id": project_id,
-        "url": f"/projects/{project_id}",
+        "kind": kind,
+        "ref_id": ref_id,
+        "url": url or f"/projects/{ref_id}",
         "last_crawled": now,
     }
     if etag:

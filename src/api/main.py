@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .. import __version__, db as database
 from ..config import settings
-from .routers import health, projects
+from .routers import health, projects, users
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)-7s %(name)s: %(message)s"
@@ -43,6 +43,7 @@ app.add_middleware(
 
 app.include_router(health.router, prefix="/v1", tags=["meta"])
 app.include_router(projects.router, prefix="/v1", tags=["projects"])
+app.include_router(users.router, prefix="/v1", tags=["users"])
 
 
 @app.get("/", include_in_schema=False)

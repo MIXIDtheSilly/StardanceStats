@@ -26,8 +26,7 @@ class Settings(BaseSettings):
     mongo_url: str = "mongodb://localhost:27017"
     mongo_db: str = "stardance_stats"
 
-    # Snapshot at least this often even when nothing changed, so charts get a
-    # heartbeat rather than gaps.
+    # Snapshot at least this often so charts get a heartbeat, not gaps.
     snapshot_heartbeat_hours: int = 24
     # Reject a snapshot whose monotonic counters fall further than this.
     anomaly_drop_threshold: float = 0.20

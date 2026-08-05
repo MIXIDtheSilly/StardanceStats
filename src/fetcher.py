@@ -143,8 +143,7 @@ class Fetcher:
                 continue
 
             if response.status_code >= 400:
-                # 404/410 are real answers about the resource, not failures of
-                # ours, so they must not trip the breaker.
+                # A 404 is an answer about the resource, not a failure of ours.
                 self._on_success()
                 return FetchResult(url, response.status_code, None, None, None, False)
 

@@ -5,8 +5,6 @@ from selectolax.parser import HTMLParser
 
 from src.parsers.project import _ship_pills
 
-# payout_blessing reuses the latest-ship-status class/modifiers, so it must
-# not be mistaken for the status itself; no fixture has one, hence snippets.
 BLESSED_PILL = (
     '<span class="project-show__latest-ship-status project-show__latest-ship-status--approved"'
     ' title="Blessed (+20% bonus)">✨ Blessed</span>'

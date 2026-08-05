@@ -60,8 +60,7 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
             )
             log.info("created time-series collection %s", name)
         except (CollectionInvalid, OperationFailure) as exc:
-            # Racing process beat us to it, or the server has no time-series
-            # support, in which case a plain collection still works.
+            # Lost a race, or no time-series support; a plain collection works.
             log.warning("could not create timeseries %s (%s); using plain", name, exc)
 
     if "crawl_log" not in existing:
@@ -79,6 +78,7 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
     await db.projects.create_index([("stats.stardust_total", DESCENDING)])
     await db.projects.create_index([("stats.total_hours", DESCENDING)])
     await db.projects.create_index([("ship_status", ASCENDING)])
+    await db.projects.create_index([("is_super_star", ASCENDING)])
     await db.projects.create_index([("last_crawled", ASCENDING)])
 
     await db.devlogs.create_index([("project_id", ASCENDING), ("posted_at", DESCENDING)])

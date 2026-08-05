@@ -85,10 +85,9 @@ def to_float(value: str | None) -> float | None:
 
 
 def parse_duration_seconds(value: str | None) -> int | None:
-    """Parse ApplicationHelper#format_seconds output ('1h 28m 9s logged').
+    """Parse format_seconds output ('1h 28m 9s logged') into seconds.
 
-    Returns None when no duration token is present, so a missing element stays
-    distinguishable from a genuine zero.
+    None when no duration token is present, so absent stays distinct from zero.
     """
     if value is None:
         return None
@@ -120,10 +119,7 @@ def strip_handle(value: str | None) -> str | None:
 
 
 def id_from_path(href: str | None, *, segment: str) -> int | None:
-    """Pull a numeric id that follows `segment` in a URL path.
-
-    id_from_path('/projects/8100/devlogs/33892', segment='devlogs') -> 33892
-    """
+    """Pull the id after `segment`: '/projects/8100/devlogs/33892' -> 33892."""
     if not href:
         return None
     m = re.search(rf"/{re.escape(segment)}/(\d+)", href)

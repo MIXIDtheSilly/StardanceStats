@@ -20,6 +20,8 @@ from .common import (
 
 POST_TYPE_DEVLOG = "Post::Devlog"
 POST_TYPE_SHIP = "Post::ShipEvent"
+# Upstream schema calls this "fire"; rendered UI calls it "Super Star".
+POST_TYPE_FIRE = "Post::FireEvent"
 
 _SHIP_NUMBER_RE = re.compile(r"Ship\s*#(\d+)")
 _COMMENTS_ID_RE = re.compile(r"comments_count_post_devlog_(\d+)")
@@ -29,8 +31,7 @@ _BLESSING_RE = re.compile(r"\b(blessed|cursed)\b", re.IGNORECASE)
 def parse_project_page(html: str, project_id: int) -> ParseResult:
     """Parse a project page into {project, devlogs, ships}.
 
-    Raises ParseError when the document is not recognisably a project page, so
-    an error page is never persisted as an empty project.
+    Raises ParseError on an unrecognisable page so error pages are not stored.
     """
     tree = HTMLParser(html)
     result = ParseResult()
@@ -46,10 +47,10 @@ def parse_project_page(html: str, project_id: int) -> ParseResult:
 
     devlogs: list[dict[str, Any]] = []
     ships: list[dict[str, Any]] = []
+    super_stars: list[dict[str, Any]] = []
     unknown_cards = 0
 
-    # Selectors target semantic hooks (data-*, BEM classes), not layout
-    # position, since upstream restyles more often than it renames wiring.
+    # Match on data-* hooks, not layout: upstream restyles more than it rewires.
     for card in tree.css("article.feed-post-card"):
         post_type = card.attributes.get("data-feed-engagement-post-type-value")
         if post_type == POST_TYPE_DEVLOG:
@@ -62,6 +63,8 @@ def parse_project_page(html: str, project_id: int) -> ParseResult:
             ship = _parse_ship_card(card, project_id, result)
             if ship:
                 ships.append(ship)
+        elif post_type == POST_TYPE_FIRE:
+            super_stars.append(_parse_super_star_card(card))
         elif post_type is None:
             unknown_cards += 1
 
@@ -73,12 +76,63 @@ def parse_project_page(html: str, project_id: int) -> ParseResult:
         for n, ship in enumerate(sorted(ships, key=lambda s: s["shipped_at"] or 0), 1):
             ship["ship_number"] = n
 
+    _apply_super_star(project, super_stars, result)
+
     result.data["devlogs"] = devlogs
     result.data["ships"] = ships
     result.data["project"] = project
 
     _cross_check(project, devlogs, ships, result)
     return result
+
+
+def _parse_super_star_card(card: Node) -> dict[str, Any]:
+    """A Super Star marking, posted into the timeline as its own card.
+
+    Read for the date and awarding staffer, which the header badge lacks.
+    """
+    time_node = card.css_first(".feed-post-card__time")
+    return {
+        "post_id": to_int(card.attributes.get("data-feed-engagement-post-id-value")),
+        "marked_at": parse_datetime(
+            time_node.attributes.get("datetime") if time_node else None
+        ),
+        "marked_by": strip_handle(first_text(card, ".feed-post-card__author")),
+        "note": first_text(card, ".feed-post-card__super-star-body"),
+    }
+
+
+def _super_star_badge(tree: HTMLParser) -> bool:
+    """Presence-only, so read it two ways before believing it is absent."""
+    if tree.css_first(".project-show__badge--fire") is not None:
+        return True
+    return any(
+        "super star" in (text_of(node) or "").lower()
+        for node in tree.css(".project-show__badge")
+    )
+
+
+def _apply_super_star(
+    project: dict[str, Any], cards: list[dict[str, Any]], result: ParseResult
+) -> None:
+    """Settle the Super Star fields from the badge and the timeline together.
+
+    Either source can go quiet on its own, so a project counts as one if
+    either says so.
+    """
+    dated = [c for c in cards if c.get("marked_at")]
+    latest = max(dated, key=lambda c: c["marked_at"], default=None)
+    badge = project.pop("_super_star_badge", False)
+
+    project["is_super_star"] = bool(badge or cards)
+    project["super_star_at"] = latest["marked_at"] if latest else None
+    project["super_star_by"] = latest["marked_by"] if latest else None
+    project["super_star_note"] = latest["note"] if latest else None
+
+    if badge:
+        result.found.add("super_star_badge")
+    elif cards:
+        result.warn("Super Star event card present but the header badge is not")
 
 
 def _parse_header(tree: HTMLParser, project_id: int, result: ParseResult) -> dict[str, Any]:
@@ -88,6 +142,7 @@ def _parse_header(tree: HTMLParser, project_id: int, result: ParseResult) -> dic
     result.set("title", project["title"])
 
     project["description"] = first_text(tree, ".project-show__description")
+    project["_super_star_badge"] = _super_star_badge(tree)
 
     stats = _labelled_stats(
         tree, ".project-show__stats-item", ".project-show__stats-num", ".project-show__stats-label"
@@ -148,8 +203,7 @@ def _parse_devlog_card(
 ) -> dict[str, Any] | None:
     post_id = to_int(card.attributes.get("data-feed-engagement-post-id-value"))
 
-    # Two independent routes to the devlog id; either one surviving a redesign
-    # is enough to keep identity stable.
+    # Two routes to the id; either surviving a redesign keeps identity stable.
     devlog_id = None
     counts_node = card.css_first('[id^="comments_count_post_devlog_"]')
     if counts_node:
@@ -225,7 +279,7 @@ def _parse_ship_card(
     time_node = card.css_first(".feed-post-card__time")
     shipped_at = parse_datetime(time_node.attributes.get("datetime") if time_node else None)
 
-    meta = _ship_meta(card)
+    meta, meta_rows = _ship_meta(card)
     status, blessing = _ship_pills(card)
 
     ship: dict[str, Any] = {
@@ -246,22 +300,30 @@ def _parse_ship_card(
         "body": first_text(card, ".project-show__latest-ship-text"),
     }
 
-    for key in ("hours_at_ship", "multiplier", "payout", "devlogs_at_ship"):
-        if ship[key] is None:
-            result.missing.add(f"ship.{key}")
-        else:
+    # Devlogs and hours render on every ship card.
+    for key in ("hours_at_ship", "devlogs_at_ship"):
+        target = result.missing if ship[key] is None else result.found
+        target.add(f"ship.{key}")
+
+    # Payout and multiplier only render once the ship's review closes, so a
+    # missing row is a real state, not a stale selector.
+    for key in ("multiplier", "payout"):
+        if ship[key] is not None:
             result.found.add(f"ship.{key}")
+        elif key in meta_rows:
+            result.missing.add(f"ship.{key}")
 
     return ship
 
 
-def _ship_meta(card: Node) -> dict[str, float | int]:
-    """Read the ship totals row.
+def _ship_meta(card: Node) -> tuple[dict[str, float | int], set[str]]:
+    """Read the ship totals row, matching on class and wording both.
 
-    Each item is matched on both its modifier class and its wording, so a class
-    rename alone does not lose the value.
+    Also returns which rows were present, so the caller can tell a missing
+    row from one whose number failed to parse.
     """
     out: dict[str, float | int] = {}
+    rows: set[str] = set()
     for item in card.css(".profile-project-card__meta-item"):
         classes = item.attributes.get("class") or ""
         title = (item.attributes.get("title") or "").lower()
@@ -269,34 +331,33 @@ def _ship_meta(card: Node) -> dict[str, float | int]:
         low = text.lower()
 
         if "--multiplier" in classes or "multiplier" in low:
+            rows.add("multiplier")
             value = to_float(text)
             if value is not None:
                 out["multiplier"] = value
         elif "--payout" in classes or "payout" in title or "stardust" in low:
+            rows.add("payout")
             value = to_int(text)
             if value is not None:
                 out["payout"] = value
         elif "--time" in classes or re.search(r"\d+\s*h\b", low):
+            rows.add("hours")
             value = to_float(text)
             if value is not None:
                 out["hours"] = value
         elif "devlog" in low:
+            rows.add("devlogs")
             value = to_int(text)
             if value is not None:
                 out["devlogs"] = value
-    return out
+    return out, rows
 
 
 def _ship_pills(card: Node) -> tuple[str, str | None]:
     """Split the status-pill row into (certification status, payout blessing).
 
-    Both pills share the latest-ship-status class and a blessing reuses the
-    --approved / --returned modifiers, so the class alone cannot tell them
-    apart and a blessed ship would report its status as "blessed". The blessing
-    is identified by its wording instead, which appears in both the title
-    attribute and the pill text.
-
-    No status pill means no pending/returned marker, i.e. approved.
+    Both pills share a class and the same modifiers, so only the wording tells
+    them apart. No status pill means approved.
     """
     status: str | None = None
     blessing: str | None = None
@@ -318,8 +379,7 @@ def _ship_pills(card: Node) -> tuple[str, str | None]:
         elif "changes requested" in low or "returned" in low:
             status = "returned"
         elif low:
-            # Mission pills only render for members and admins, so a guest
-            # crawl should never reach here. Keep the text rather than drop it.
+            # Mission pills are member-only, so a guest crawl never lands here.
             status = low
 
     return status or "approved", blessing
@@ -333,8 +393,7 @@ def _cross_check(
 ) -> None:
     """Compare the page's own totals against what we summed from the cards.
 
-    Small drift is normal (deleted devlogs stay in the counter, hours are
-    rounded for display), so this warns rather than fails. A large gap is the
+    Small drift is normal, so this warns rather than fails. A large gap is the
     earliest signal that a selector has gone stale.
     """
     header_count = project.get("devlogs_count")

@@ -11,8 +11,9 @@ from ..deps import db as db_dep
 router = APIRouter()
 
 PROJECT_METRICS = {
-    "devlogs", "total_hours", "followers", "likes", "comments",
-    "reposts", "views", "ships", "stardust_total", "latest_multiplier",
+    "devlogs", "total_hours", "shipped_hours", "paid_hours", "followers",
+    "likes", "comments", "reposts", "views", "ships", "stardust_total",
+    "latest_multiplier",
 }
 
 Interval = Literal["1h", "1d", "1w"]
@@ -85,11 +86,9 @@ async def get_project_history(
     delta: bool = Query(True, description="Include per-bucket change."),
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
-    """Bucketed time series for one project.
+    """Bucketed time series, reporting the last observation per bucket.
 
-    Each bucket reports the last observation within it, the right reading for
-    cumulative counters. The synthetic flag marks buckets reconstructed at
-    first ingest rather than observed by a crawl.
+    The synthetic flag marks buckets reconstructed at ingest, not observed.
     """
     requested = [m.strip() for m in metrics.split(",") if m.strip()]
     unknown = [m for m in requested if m not in PROJECT_METRICS]
