@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import UpdateOne
 
 from ..parsers.common import utcnow
 from .tiering import ERROR_STATUSES, classify, error_backoff, next_due, priority
@@ -12,6 +13,11 @@ from .tiering import ERROR_STATUSES, classify, error_backoff, next_due, priority
 log = logging.getLogger(__name__)
 
 UNCHANGED_STATUSES = frozenset({"not_modified"})
+
+SEED_CHUNK = 2000
+
+SCAN_STATE_ID = "id_scan"
+SCAN_COLLECTION = {"project": "projects", "user": "users"}
 
 
 def frontier_id(kind: str, ref_id: int | str) -> str:
@@ -47,6 +53,100 @@ async def due(
         query, projection={"kind": 1, "ref_id": 1, "url": 1, "tier": 1}
     ).sort([("priority", 1), ("next_due", 1)]).limit(limit)
     return [row async for row in cursor]
+
+
+async def max_ref_id(
+    db: AsyncIOMotorDatabase, kind: str, *, listed_only: bool = False
+) -> int:
+    """Highest id we know of for a kind. Missions are slugs, so they have none."""
+    query: dict[str, Any] = {"kind": kind, "ref_id": {"$type": "number"}}
+    if listed_only:
+        # Seeded rows are mostly 404s, so their ids cannot raise the ceiling.
+        query["in_sitemap"] = True
+    row = await db.crawl_frontier.find_one(
+        query, sort=[("ref_id", -1)], projection={"ref_id": 1}
+    )
+    return int(row["ref_id"]) if row else 0
+
+
+async def max_ingested_id(db: AsyncIOMotorDatabase, kind: str) -> int:
+    """Highest id that turned out to be a real page, listed or not."""
+    row = await db[SCAN_COLLECTION[kind]].find_one(
+        sort=[("_id", -1)], projection={"_id": 1}
+    )
+    return int(row["_id"]) if row else 0
+
+
+async def extend_scan(
+    db: AsyncIOMotorDatabase, kind: str, *, margin: int, now: datetime | None = None
+) -> dict[str, Any]:
+    """Seed whatever id range the last pass has not covered yet."""
+    state = await db.crawl_state.find_one({"_id": SCAN_STATE_ID}) or {}
+    covered = int(state.get(kind) or 0)
+
+    ceiling = max(
+        await max_ref_id(db, kind, listed_only=True),
+        await max_ingested_id(db, kind),
+    ) + margin
+
+    if ceiling <= covered:
+        return {"kind": kind, "covered_to": covered, "seeded": 0}
+
+    result = await seed_id_range(db, kind, covered + 1, ceiling, now=now)
+    await db.crawl_state.update_one(
+        {"_id": SCAN_STATE_ID}, {"$set": {kind: ceiling}}, upsert=True
+    )
+    return {**result, "covered_to": ceiling}
+
+
+async def seed_id_range(
+    db: AsyncIOMotorDatabase,
+    kind: str,
+    start: int,
+    end: int,
+    *,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Add frontier rows across an id range, leaving rows we already have alone."""
+    now = now or utcnow()
+    seeded = 0
+
+    # Never $set: a row already being tracked keeps its tier, etag and schedule.
+    insert = {
+        "in_sitemap": False,
+        "first_seen": now,
+        "last_crawled": None,
+        "consecutive_unchanged": 0,
+        "error_count": 0,
+        # None means due now, so seeded rows crawl on the next pass.
+        "next_due": None,
+        "tier": "cold",
+    }
+
+    ops: list[UpdateOne] = []
+    for ref_id in range(start, end + 1):
+        ops.append(
+            UpdateOne(
+                {"_id": frontier_id(kind, ref_id)},
+                {"$setOnInsert": {
+                    "kind": kind,
+                    "ref_id": ref_id,
+                    "url": path_for(kind, ref_id),
+                    "priority": priority("cold", kind),
+                    **insert,
+                }},
+                upsert=True,
+            )
+        )
+        if len(ops) >= SEED_CHUNK:
+            seeded += (await db.crawl_frontier.bulk_write(ops, ordered=False)).upserted_count
+            ops = []
+
+    if ops:
+        seeded += (await db.crawl_frontier.bulk_write(ops, ordered=False)).upserted_count
+
+    log.info("seeded %d new %s rows over ids %d-%d", seeded, kind, start, end)
+    return {"kind": kind, "from": start, "to": end, "seeded": seeded}
 
 
 async def record_crawl(

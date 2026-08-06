@@ -1,0 +1,17 @@
+# The upstream Rails app kept for reference; it dwarfs this project.
+Stardance/
+mine/
+
+.git/
+.github/
+tests/
+
+.env
+*.txt
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/

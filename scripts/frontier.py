@@ -78,20 +78,43 @@ async def main() -> int:
     ap.add_argument(
         "--kind", choices=["project", "user", "mission"], help="restrict --crawl"
     )
+    ap.add_argument(
+        "--seed", choices=["project", "user"], action="append", metavar="KIND",
+        help="seed frontier rows across an id range; repeatable",
+    )
+    ap.add_argument("--from", dest="id_from", type=int, default=1)
+    ap.add_argument(
+        "--to", dest="id_to", type=int,
+        help="last id to seed (default: highest known for the kind, plus --margin)",
+    )
+    ap.add_argument(
+        "--margin", type=int, default=1000,
+        help="how far past the highest known id to probe when --to is omitted",
+    )
     ap.add_argument("--max-pages", type=int, default=1_000_000)
     ap.add_argument("--max-seconds", type=float, default=float("inf"))
     ap.add_argument("--batch", type=int, default=200)
     ap.add_argument("--no-cache", action="store_true", help="ignore the stored sitemap ETag")
     args = ap.parse_args()
 
-    if not (args.sync or args.status or args.crawl or args.rollup):
-        ap.error("pick at least one of --sync, --status, --crawl, --rollup")
+    if not (args.sync or args.status or args.crawl or args.rollup or args.seed):
+        ap.error("pick at least one of --sync, --seed, --status, --crawl, --rollup")
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)-7s %(name)s: %(message)s")
     await database.bootstrap()
     db = database.get_db()
 
     out = {}
+    if args.seed:
+        out["seeded"] = []
+        for kind in args.seed:
+            # Seeding before --crawl in the same run, so the sweep drains it.
+            end = args.id_to or await frontier.max_ref_id(db, kind) + args.margin
+            out["seeded"].append(
+                await frontier.seed_id_range(db, kind, args.id_from, end)
+            )
+        print(json.dumps(out["seeded"], indent=2, default=str))
+
     if args.sync or args.crawl:
         async with Fetcher() as fetcher:
             if args.sync:

@@ -1,22 +1,33 @@
-# Uses the MongoDB already running on the host, not a container.
-# The host mongod must bind beyond 127.0.0.1 for this to connect.
+x-app: &app
+  build:
+    context: /home/mixid/crawler/
+  restart: unless-stopped
+  network_mode: host
+  environment:
+    STARDANCE_MONGO_URL: ${DOCKER_MONGO_URL:?set this in the Portainer stack environment variables}
+    STARDANCE_PROXIES_FILE: /app/proxies.txt
+    STARDANCE_PROXY_REQUESTS_PER_SECOND: "0.5"
+    STARDANCE_CRAWL_BATCH_SIZE: "200"
+    STARDANCE_CRAWL_CONCURRENCY: "128"
+  volumes:
+    - type: bind
+      source: /home/mixid/crawler/Webshare 100 proxies.txt
+      target: /app/proxies.txt
+      read_only: true
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "5"}
+
 services:
   api:
-    build: .
-    restart: unless-stopped
-    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
-    environment:
-      STARDANCE_MONGO_URL: mongodb://host.docker.internal:27017
-    ports:
-      - "8000:8000"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    <<: *app
+    command: uvicorn src.api.main:app --host 127.0.0.1 --port 8471
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://127.0.0.1:8471/health', timeout=5)"]
+      interval: 30s
+      start_period: 20s
 
   collector:
-    build: .
-    restart: unless-stopped
+    <<: *app
     command: python -m src.collector.run
-    environment:
-      STARDANCE_MONGO_URL: mongodb://host.docker.internal:27017
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    mem_limit: 1g

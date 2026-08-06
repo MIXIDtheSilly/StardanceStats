@@ -296,3 +296,76 @@ async def test_a_crawled_mission_keeps_its_lead(db):
 
     assert doc["priority"] == -1
     assert doc["url"] == "/missions/hackpad"
+
+
+async def test_seeding_a_range_queues_ids_the_sitemap_never_listed(db):
+    """Ids are sequential and every one is public, so the range reaches drafts."""
+    await frontier.seed_id_range(db, "project", 1, 5, now=NOW)
+
+    rows = await frontier.due(db, kind="project", now=NOW)
+    assert sorted(r["ref_id"] for r in rows) == [1, 2, 3, 4, 5]
+    assert (await db.crawl_frontier.find_one({"_id": "project:3"}))["url"] == "/projects/3"
+
+
+async def test_seeding_never_disturbs_a_row_already_being_tracked(db):
+    """Re-seeding is routine, so it must not reset a schedule or drop an etag."""
+    await apply_sitemap(db, entries(("project", 2, NOW)), now=NOW)
+    await frontier.record_crawl(db, "project", 2, status="ok", etag='W/"abc"', now=NOW)
+    before = await db.crawl_frontier.find_one({"_id": "project:2"})
+
+    result = await frontier.seed_id_range(db, "project", 1, 3, now=NOW)
+
+    assert result["seeded"] == 2  # 1 and 3; 2 was already there
+    assert await db.crawl_frontier.find_one({"_id": "project:2"}) == before
+
+
+async def test_seeded_rows_survive_the_next_sitemap_sync(db):
+    """Absent from the sitemap by definition, so delisting must skip them."""
+    await frontier.seed_id_range(db, "project", 1, 2, now=NOW)
+    await apply_sitemap(db, entries(("project", 1, NOW)), now=NOW)
+
+    seeded_only = await db.crawl_frontier.find_one({"_id": "project:2"})
+    assert seeded_only["tier"] != "frozen"
+    assert seeded_only["next_due"] is None
+    assert [r["ref_id"] for r in await frontier.due(db, kind="project", now=NOW)] == [1, 2]
+
+
+async def test_max_ref_id_ignores_slug_keyed_kinds(db):
+    await apply_sitemap(
+        db, entries(("project", 41154, NOW), ("mission", "hackpad", NOW)), now=NOW
+    )
+    assert await frontier.max_ref_id(db, "project") == 41154
+    assert await frontier.max_ref_id(db, "mission") == 0
+
+
+async def test_the_scan_covers_the_whole_range_on_its_first_pass(db):
+    """Drafts sit below the highest listed id, so the tail alone would miss them."""
+    await apply_sitemap(db, entries(("project", 40, NOW)), now=NOW)
+
+    result = await frontier.extend_scan(db, "project", margin=5, now=NOW)
+
+    assert result["seeded"] == 44  # 1..45, less the listed id 40
+    assert result["covered_to"] == 45
+
+
+async def test_a_second_pass_only_seeds_what_grew(db):
+    await apply_sitemap(db, entries(("project", 40, NOW)), now=NOW)
+    await frontier.extend_scan(db, "project", margin=5, now=NOW)
+
+    # A project above the old ceiling turns up and is ingested.
+    await db.projects.insert_one({"_id": 47})
+    result = await frontier.extend_scan(db, "project", margin=5, now=NOW)
+
+    assert result["seeded"] == 7  # 46..52
+    assert result["covered_to"] == 52
+
+
+async def test_a_tail_of_dead_ids_cannot_ratchet_the_ceiling(db):
+    """Seeded rows must not raise it, or every pass would extend past the last."""
+    await apply_sitemap(db, entries(("project", 40, NOW)), now=NOW)
+    first = await frontier.extend_scan(db, "project", margin=5, now=NOW)
+
+    for _ in range(3):
+        again = await frontier.extend_scan(db, "project", margin=5, now=NOW)
+        assert again["seeded"] == 0
+        assert again["covered_to"] == first["covered_to"]

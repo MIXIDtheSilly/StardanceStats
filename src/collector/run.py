@@ -17,7 +17,7 @@ from ..parsers.common import utcnow
 from . import frontier
 from .crawl import crawl_project
 from .crawl_mission import crawl_mission
-from .crawl_user import crawl_user
+from .crawl_user import crawl_user, resolve_project_owners
 from .rollup import rollup_global
 from .sitemap import sync_sitemap
 
@@ -28,6 +28,12 @@ REACHED = frozenset({"ok", "not_modified", "gone"})
 
 # Upstream throttles at 600 req / 5 min and 120 / min, keyed on the caller's address.
 PER_ADDRESS_LIMIT = 2.0
+
+# Each owner costs their profile plus every project of theirs we have not seen.
+OWNER_RESOLVE_LIMIT = 100
+
+# How far past the highest id known to be real the scan keeps probing.
+ID_SCAN_MARGIN = 1000
 
 
 async def crawl_one(
@@ -157,6 +163,28 @@ async def crawl_loop(db: AsyncIOMotorDatabase, fetcher: Fetcher, stop: asyncio.E
                 pass
 
 
+async def extend_scan(db: AsyncIOMotorDatabase) -> dict[str, Any]:
+    """Queue the id ranges the sitemap leaves out. No network of its own."""
+    out = {}
+    for kind in ("project", "user"):
+        out[kind] = await frontier.extend_scan(db, kind, margin=ID_SCAN_MARGIN)
+    seeded = sum(v["seeded"] for v in out.values())
+    if seeded:
+        log.info("id scan queued %d new rows: %s", seeded, out)
+    return out
+
+
+async def resolve_owners(db: AsyncIOMotorDatabase, fetcher: Fetcher) -> dict[str, Any]:
+    """Crawl owners the sitemap never listed, by the handle their project names."""
+    outcome = await resolve_project_owners(db, fetcher, limit=OWNER_RESOLVE_LIMIT)
+    if outcome["pending"]:
+        log.info(
+            "owners: %d resolved, %d failed, of %d pending",
+            len(outcome["resolved"]), len(outcome["failed"]), outcome["pending"],
+        )
+    return outcome
+
+
 async def recompute_derived(db: AsyncIOMotorDatabase) -> dict[str, Any]:
     """Re-derive user totals from stored rows. No network."""
     count = await recompute_all_users(db)
@@ -173,6 +201,13 @@ def build_scheduler(db: AsyncIOMotorDatabase, fetcher: Fetcher) -> AsyncIOSchedu
     )
     scheduler.add_job(
         rollup_global, "interval", hours=1, args=[db], id="rollup_global", **common
+    )
+    scheduler.add_job(
+        extend_scan, "interval", hours=1, args=[db], id="extend_scan", **common
+    )
+    scheduler.add_job(
+        resolve_owners, "interval", hours=1, args=[db, fetcher],
+        id="resolve_owners", **common,
     )
     scheduler.add_job(
         recompute_derived, "cron", hour=3, args=[db], id="recompute_derived", **common
@@ -217,6 +252,9 @@ async def main() -> None:
         if await db.crawl_frontier.count_documents({}) == 0:
             log.info("frontier empty, syncing sitemap")
             log.info("sitemap: %s", await sync_sitemap(db, fetcher))
+
+        # At startup too, so a first deploy does not wait an hour to widen.
+        log.info("id scan: %s", await extend_scan(db))
 
         depth = await frontier.queue_depth(db)
         log.info("collector started at %s; frontier %s", utcnow().isoformat(), depth)

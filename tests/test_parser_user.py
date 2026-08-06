@@ -11,6 +11,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 USER = FIXTURES / "user_32.html"
 PROJECTS_TAB = FIXTURES / "user_the_craw_projects.html"
 FEED_TAB = FIXTURES / "user_the_craw.html"
+PLACEHOLDER = FIXTURES / "user_unverified_placeholder.html"
 
 
 @pytest.fixture(scope="module")
@@ -92,6 +93,36 @@ def test_projects_tab_yields_every_project_id():
 
     assert user["project_ids"] == [8100, 18181, 19167, 19371, 41154]
     assert len(user["project_ids"]) == user["projects_count"] == 5
+
+
+def test_unverified_placeholder_is_read_as_a_hidden_profile():
+    """Banned and unverified users get a placeholder page that still names them."""
+    user = parse_user_page(PLACEHOLDER.read_text(encoding="utf-8"), 4242).data["user"]
+
+    assert user["username"] == "quiet_comet"
+    assert user["hidden"] is True
+    assert user["slack_id"] == "U0912ABCDEF"
+    # None, not [], so ingest leaves a previously known list alone.
+    assert user["project_ids"] is None
+
+
+def test_a_page_title_is_never_mistaken_for_a_handle():
+    """Such pages share one title, so all would claim the same bogus username."""
+    html = (
+        '<html><head><meta property="og:title" content="Verifying… - Stardance">'
+        '</head><body></body></html>'
+    )
+    with pytest.raises(ParseError):
+        parse_user_page(html, 4242)
+
+
+def test_a_real_profile_og_title_still_yields_the_handle():
+    """The fallback that matters: a profile page whose header markup changed."""
+    html = (
+        '<html><head><meta property="og:title" content="@The_Craw | Stardance">'
+        '</head><body></body></html>'
+    )
+    assert parse_user_page(html, 11155).data["user"]["username"] == "The_Craw"
 
 
 def test_projects_tab_still_carries_the_profile_header():

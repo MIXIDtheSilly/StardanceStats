@@ -19,6 +19,8 @@ _ORDINAL_RE = re.compile(r"(\d+)(st|nd|rd|th)\b")
 _JOINED_RE = re.compile(r"^\s*Joined\s+", re.IGNORECASE)
 _CACHET_RE = re.compile(r"cachet\.dunkirk\.sh/users/([A-Z0-9]+)", re.IGNORECASE)
 _OG_USER_ID_RE = re.compile(r"/users/(\d+)")
+# A profile's og_title is "@handle | Stardance"; other pages get "title - Stardance".
+_OG_HANDLE_RE = re.compile(r"^@(.+?)\s*\|")
 _PROJECT_HREF_RE = re.compile(r"/projects/(\d+)")
 _STREAK_RE = re.compile(r"(\d+)\s*-?\s*day\s+streak", re.IGNORECASE)
 
@@ -30,7 +32,10 @@ def parse_user_page(html: str, user_id: int | None = None) -> ParseResult:
     tree = HTMLParser(html)
     result = ParseResult()
 
+    # Banned and unverified users get a placeholder page that still names them.
     handle = strip_handle(first_text(tree, ".profile__handle"))
+    if handle is None:
+        handle = strip_handle(first_text(tree, ".profile-placeholder__handle"))
     if handle is None:
         handle = _handle_from_og(tree)
     if handle is None:
@@ -54,7 +59,9 @@ def parse_user_page(html: str, user_id: int | None = None) -> ParseResult:
     user["joined_at"] = _joined_at(tree)
     user["banner_url"] = _attr(tree, ".profile__banner-image", "src")
 
-    avatar = _attr(tree, ".profile__avatar", "src")
+    avatar = _attr(tree, ".profile__avatar", "src") or _attr(
+        tree, ".profile-placeholder__avatar", "src"
+    )
     user["avatar_url"] = avatar
     slack = _CACHET_RE.search(avatar or "")
     user["slack_id"] = slack.group(1) if slack else None
@@ -128,7 +135,9 @@ def _handle_from_og(tree: HTMLParser) -> str | None:
     content = og.attributes.get("content") if og else None
     if not content:
         return None
-    return strip_handle(content.split("|")[0].strip())
+    # Match the shape, not just split: a plain page title would otherwise pass as one.
+    match = _OG_HANDLE_RE.match(content.strip())
+    return strip_handle(match.group(1)) if match else None
 
 
 def _id_from_og(tree: HTMLParser) -> int | None:
