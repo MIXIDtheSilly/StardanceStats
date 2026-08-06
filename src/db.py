@@ -79,6 +79,7 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
     await db.projects.create_index([("stats.total_hours", DESCENDING)])
     await db.projects.create_index([("ship_status", ASCENDING)])
     await db.projects.create_index([("is_super_star", ASCENDING)])
+    await db.projects.create_index([("mission.slug", ASCENDING)], sparse=True)
     await db.projects.create_index([("last_crawled", ASCENDING)])
 
     await db.devlogs.create_index([("project_id", ASCENDING), ("posted_at", DESCENDING)])
@@ -89,8 +90,20 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
     await db.ships.create_index([("project_id", ASCENDING), ("ship_number", ASCENDING)])
     await db.ships.create_index([("username_lower", ASCENDING)])
     await db.ships.create_index([("shipped_at", DESCENDING)])
+    await db.ships.create_index([("mission_slug", ASCENDING)], sparse=True)
+    await db.ships.create_index([("payout_path", ASCENDING)], sparse=True)
 
-    await db.crawl_frontier.create_index([("next_due", ASCENDING), ("tier", ASCENDING)])
-    await db.crawl_frontier.create_index([("kind", ASCENDING)])
+    await db.missions.create_index([("payout_path", ASCENDING)])
+    await db.missions.create_index([("last_crawled", ASCENDING)])
+
+    # The collector's only hot query.
+    await db.crawl_frontier.create_index(
+        [("kind", ASCENDING), ("priority", ASCENDING), ("next_due", ASCENDING)]
+    )
+    await db.crawl_frontier.create_index(
+        [("priority", ASCENDING), ("next_due", ASCENDING)]
+    )
+    await db.crawl_frontier.create_index([("tier", ASCENDING)])
+    await db.crawl_frontier.create_index([("sitemap_sync", ASCENDING)])
 
     log.info("bootstrap complete on db=%s", settings.mongo_db)

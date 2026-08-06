@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from ...collector.frontier import queue_depth
 from ...parsers.common import utcnow
 from ..deps import db as db_dep
 
@@ -34,12 +35,20 @@ async def health(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
         {"ts": {"$gte": now - timedelta(hours=1)}, "status": {"$ne": "ok"}}
     )
 
+    sitemap = await db.crawl_state.find_one({"_id": "sitemap"}) or {}
+
     return {
         "status": "degraded" if stale else "ok",
         "mongo": mongo_ok,
         "last_crawl": last_crawl,
         "stale": stale,
         "errors_last_hour": errors,
+        "queue": await queue_depth(db, now=now),
+        "sitemap": {
+            "last_checked": sitemap.get("last_checked"),
+            "last_synced": sitemap.get("last_synced"),
+            "counts": sitemap.get("counts"),
+        },
         "now": now,
     }
 
@@ -47,6 +56,16 @@ async def health(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
 @router.get("/meta")
 async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """Corpus size and coverage."""
+    listed = {
+        kind: await db.crawl_frontier.count_documents(
+            {"kind": kind, "in_sitemap": {"$ne": False}}
+        )
+        for kind in ("project", "user")
+    }
+    crawled = {
+        "project": await db.projects.count_documents({"gone": {"$ne": True}}),
+        "user": await db.users.count_documents({"gone": {"$ne": True}}),
+    }
     return {
         "counts": {
             "projects": await db.projects.count_documents({}),
@@ -59,6 +78,11 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
         "coverage": {
             "users_complete": await db.users.count_documents({"coverage.complete": True}),
             "users_partial": await db.users.count_documents({"coverage.complete": False}),
+            # Against the sitemap, upstream's own index of what is public.
+            "projects_listed": listed["project"],
+            "projects_crawled": crawled["project"],
+            "users_listed": listed["user"],
+            "users_crawled": crawled["user"],
         },
         "data_source": "public pages of stardance.hackclub.com",
         "caveats": [

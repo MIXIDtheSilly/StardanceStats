@@ -86,10 +86,7 @@ async def get_project_history(
     delta: bool = Query(True, description="Include per-bucket change."),
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
-    """Bucketed time series, reporting the last observation per bucket.
-
-    The synthetic flag marks buckets reconstructed at ingest, not observed.
-    """
+    """Bucketed time series, reporting the last observation per bucket."""
     requested = [m.strip() for m in metrics.split(",") if m.strip()]
     unknown = [m for m in requested if m not in PROJECT_METRICS]
     if unknown:

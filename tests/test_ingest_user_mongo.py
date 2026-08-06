@@ -135,8 +135,7 @@ async def test_totals_are_computed_from_our_own_rows(db):
 
 
 async def test_unpaid_hours_carry_an_estimate(db):
-    """Paid-to-date understates an account mid-cycle; price the rest at the
-    rate they have actually realised."""
+    """Paid-to-date understates an account mid-cycle, so price the rest at its own rate."""
     await ingest_project(db, parse_project(), now=NOW)
     totals = (await craw(db))["totals"]
 
@@ -148,8 +147,7 @@ async def test_unpaid_hours_carry_an_estimate(db):
 
 
 async def test_a_ship_awaiting_payout_counts_as_unpaid_hours(db):
-    """Its hours are shipped but have earned nothing, so they stay in the
-    estimate rather than dragging the rate down."""
+    """Shipped but unearned hours belong in the estimate, not in the rate."""
     await ingest_project(db, parse_project(), now=NOW)
     await db.ships.update_one(
         {"project_id": 8100, "ship_number": 2},
@@ -230,8 +228,7 @@ async def test_coverage_is_complete_once_every_listed_project_is_held(db):
 
 
 async def test_deleted_devlogs_do_not_block_completeness(db):
-    """devlogs_reported is an unfiltered upstream count; the gap is unreachable,
-    so it must not read as a crawl we still owe."""
+    """devlogs_reported counts rows no page renders, so the gap is not a crawl we owe."""
     await ingest_project(db, parse_project(), now=NOW)
     parsed = parse_user(99, "The_Craw")
     parsed.data["user"].update(projects_count=1, project_ids=[8100], devlogs_count=999)

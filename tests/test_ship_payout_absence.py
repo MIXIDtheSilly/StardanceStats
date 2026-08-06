@@ -1,7 +1,3 @@
-"""A ship pays out only after its review window closes. Until then the page
-renders no payout or multiplier row, so the parser must treat that as data,
-not a broken selector, or every in-review ship trips the anomaly guard."""
-
 from __future__ import annotations
 
 from selectolax.parser import HTMLParser

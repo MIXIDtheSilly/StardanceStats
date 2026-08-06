@@ -24,15 +24,13 @@ POST_TYPE_SHIP = "Post::ShipEvent"
 POST_TYPE_FIRE = "Post::FireEvent"
 
 _SHIP_NUMBER_RE = re.compile(r"Ship\s*#(\d+)")
+_MISSION_SLUG_RE = re.compile(r"/missions/([^/?#\"]+)")
 _COMMENTS_ID_RE = re.compile(r"comments_count_post_devlog_(\d+)")
 _BLESSING_RE = re.compile(r"\b(blessed|cursed)\b", re.IGNORECASE)
 
 
 def parse_project_page(html: str, project_id: int) -> ParseResult:
-    """Parse a project page into {project, devlogs, ships}.
-
-    Raises ParseError on an unrecognisable page so error pages are not stored.
-    """
+    """Parse a project page into {project, devlogs, ships}."""
     tree = HTMLParser(html)
     result = ParseResult()
 
@@ -77,6 +75,7 @@ def parse_project_page(html: str, project_id: int) -> ParseResult:
             ship["ship_number"] = n
 
     _apply_super_star(project, super_stars, result)
+    _apply_mission(project, tree, ships, result)
 
     result.data["devlogs"] = devlogs
     result.data["ships"] = ships
@@ -86,11 +85,57 @@ def parse_project_page(html: str, project_id: int) -> ParseResult:
     return result
 
 
-def _parse_super_star_card(card: Node) -> dict[str, Any]:
-    """A Super Star marking, posted into the timeline as its own card.
+def mission_slug(href: str | None) -> str | None:
+    m = _MISSION_SLUG_RE.search(href or "")
+    return m.group(1) if m else None
 
-    Read for the date and awarding staffer, which the header badge lacks.
-    """
+
+def _parse_mission(tree: HTMLParser) -> dict[str, Any] | None:
+    """The mission a project is currently attached to, or None."""
+    panel = tree.css_first(".mission-panel")
+    if panel is None:
+        return None
+
+    link = panel.css_first(".mission-panel__title-link")
+    classes = panel.attributes.get("class") or ""
+    bar = panel.css_first(".mission-panel__progress-bar")
+
+    return {
+        "slug": mission_slug(link.attributes.get("href") if link else None),
+        "name": text_of(link),
+        # Set by a non-rejected submission; the attachment then stays for display.
+        "shipped": "mission-panel--shipped" in classes,
+        # Guide progress renders only before the first ship.
+        "sections_done": to_int(bar.attributes.get("value")) if bar else None,
+        "sections_total": to_int(bar.attributes.get("max")) if bar else None,
+    }
+
+
+def _apply_mission(
+    project: dict[str, Any], tree: HTMLParser, ships: list[dict[str, Any]], result: ParseResult
+) -> None:
+    """Settle the mission fields from the panel, cross-checked against ships."""
+    mission = _parse_mission(tree)
+    project["mission"] = mission
+
+    ship_slugs = {s["mission_slug"] for s in ships if s.get("mission_slug")}
+    if mission is None:
+        # No panel and a renamed class look identical; a ship naming one catches it.
+        if ship_slugs:
+            result.warn(f"ships name mission(s) {sorted(ship_slugs)} but no panel rendered")
+        return
+
+    result.found.add("mission_panel")
+    if mission["slug"] is None:
+        result.missing.add("mission_slug")
+    if ship_slugs and mission["slug"] not in ship_slugs:
+        result.warn(
+            f"panel mission {mission['slug']!r} not among shipped missions {sorted(ship_slugs)}"
+        )
+
+
+def _parse_super_star_card(card: Node) -> dict[str, Any]:
+    """A Super Star marking, posted into the timeline as its own card."""
     time_node = card.css_first(".feed-post-card__time")
     return {
         "post_id": to_int(card.attributes.get("data-feed-engagement-post-id-value")),
@@ -115,11 +160,7 @@ def _super_star_badge(tree: HTMLParser) -> bool:
 def _apply_super_star(
     project: dict[str, Any], cards: list[dict[str, Any]], result: ParseResult
 ) -> None:
-    """Settle the Super Star fields from the badge and the timeline together.
-
-    Either source can go quiet on its own, so a project counts as one if
-    either says so.
-    """
+    """Settle the Super Star fields from the badge and the timeline together."""
     dated = [c for c in cards if c.get("marked_at")]
     latest = max(dated, key=lambda c: c["marked_at"], default=None)
     badge = project.pop("_super_star_badge", False)
@@ -156,6 +197,8 @@ def _parse_header(tree: HTMLParser, project_id: int, result: ParseResult) -> dic
     project["followers"] = followers
     result.set("followers", followers)
 
+    # A bare "By" is an answer; the byline vanishing is a selector break.
+    byline = tree.css_first(".project-show__authors")
     members = []
     for link in tree.css(".project-show__author"):
         handle = strip_handle(text_of(link))
@@ -163,7 +206,11 @@ def _parse_header(tree: HTMLParser, project_id: int, result: ParseResult) -> dic
             members.append(handle)
     project["members"] = members
     project["owner_username"] = members[0] if members else None
-    result.set("owner_username", project["owner_username"])
+    result.set_optional(
+        "owner_username", project["owner_username"], present=byline is not None
+    )
+    if byline is not None and not members:
+        result.warn("byline rendered with no author; project has no visible owner")
 
     banner = tree.css_first(".project-show__banner-image")
     project["banner_url"] = banner.attributes.get("src") if banner else None
@@ -281,6 +328,7 @@ def _parse_ship_card(
 
     meta, meta_rows = _ship_meta(card)
     status, blessing = _ship_pills(card)
+    mission_link = card.css_first(".project-show__latest-ship-mission-link")
 
     ship: dict[str, Any] = {
         "_id": post_id,
@@ -296,7 +344,10 @@ def _parse_ship_card(
         "status": status,
         # "blessed" (+20% payout), "cursed" (-50%), or None for neutral.
         "payout_blessing": blessing,
-        "mission": first_text(card, ".project-show__latest-ship-mission-link"),
+        "mission": text_of(mission_link),
+        "mission_slug": mission_slug(
+            mission_link.attributes.get("href") if mission_link else None
+        ),
         "body": first_text(card, ".project-show__latest-ship-text"),
     }
 
@@ -305,8 +356,7 @@ def _parse_ship_card(
         target = result.missing if ship[key] is None else result.found
         target.add(f"ship.{key}")
 
-    # Payout and multiplier only render once the ship's review closes, so a
-    # missing row is a real state, not a stale selector.
+    # These render only once review closes, so missing is a real state.
     for key in ("multiplier", "payout"):
         if ship[key] is not None:
             result.found.add(f"ship.{key}")
@@ -317,11 +367,7 @@ def _parse_ship_card(
 
 
 def _ship_meta(card: Node) -> tuple[dict[str, float | int], set[str]]:
-    """Read the ship totals row, matching on class and wording both.
-
-    Also returns which rows were present, so the caller can tell a missing
-    row from one whose number failed to parse.
-    """
+    """Read the ship totals row, matching on class and wording both."""
     out: dict[str, float | int] = {}
     rows: set[str] = set()
     for item in card.css(".profile-project-card__meta-item"):
@@ -354,11 +400,7 @@ def _ship_meta(card: Node) -> tuple[dict[str, float | int], set[str]]:
 
 
 def _ship_pills(card: Node) -> tuple[str, str | None]:
-    """Split the status-pill row into (certification status, payout blessing).
-
-    Both pills share a class and the same modifiers, so only the wording tells
-    them apart. No status pill means approved.
-    """
+    """Split the status-pill row into (certification status, payout blessing)."""
     status: str | None = None
     blessing: str | None = None
 
@@ -391,11 +433,7 @@ def _cross_check(
     ships: list[dict[str, Any]],
     result: ParseResult,
 ) -> None:
-    """Compare the page's own totals against what we summed from the cards.
-
-    Small drift is normal, so this warns rather than fails. A large gap is the
-    earliest signal that a selector has gone stale.
-    """
+    """Compare the page's own totals against what we summed from the cards."""
     header_count = project.get("devlogs_count")
     if header_count is not None and devlogs:
         if abs(header_count - len(devlogs)) > max(2, header_count * 0.1):

@@ -1,3 +1,10 @@
+from .mission import (
+    assign_payout_paths,
+    ingest_mission,
+    load_missions,
+    mission_pending,
+    requeue_mission_projects,
+)
 from .project import (
     AnomalyRejected,
     backfill_project_history,
@@ -21,17 +28,22 @@ from .user import (
 __all__ = [
     "AnomalyRejected",
     "UserAnomalyRejected",
+    "assign_payout_paths",
     "backfill_project_history",
     "build_stats",
     "build_user_stats",
     "check_anomalies",
     "check_user_anomalies",
     "estimate_unpaid",
+    "ingest_mission",
     "ingest_project",
     "ingest_user",
     "link_user_id",
+    "load_missions",
+    "mission_pending",
     "missing_project_ids",
     "payout_hours",
     "recompute_all_users",
     "recompute_user_totals",
+    "requeue_mission_projects",
 ]

@@ -14,12 +14,12 @@ from ..ingest import (
 )
 from ..parsers import ParseError, parse_user_page
 from ..parsers.common import utcnow
-from .crawl import _touch_frontier, crawl_project
+from . import frontier as frontier_store
+from .crawl import crawl_project
 
 log = logging.getLogger(__name__)
 
-# The projects tab renders the same profile header as /users/:id plus a card
-# per project, unpaginated. Same request cost, strictly more data.
+# The projects tab adds a card per project for the same request cost.
 USER_PATH = "/users/{id}/projects"
 
 
@@ -32,13 +32,8 @@ async def crawl_user(
     with_projects: bool = True,
     refresh_projects: bool = False,
 ) -> dict[str, Any]:
-    """Crawl one user by numeric id. Expected outcomes are returned, not raised.
-
-    With `with_projects`, every project on their profile is crawled too, so
-    their totals cover the whole account rather than whichever projects we
-    happened to have. `refresh_projects` re-crawls ones we already hold.
-    """
-    frontier_id = f"user:{user_id}"
+    """Crawl one user by numeric id. Expected outcomes are returned, not raised."""
+    frontier_id = frontier_store.frontier_id("user", user_id)
     frontier = await db.crawl_frontier.find_one({"_id": frontier_id}) if use_cache else None
     etag = (frontier or {}).get("etag")
     last_modified = (frontier or {}).get("last_modified")
@@ -48,13 +43,13 @@ async def crawl_user(
             USER_PATH.format(id=user_id), etag=etag, last_modified=last_modified
         )
     except FetchError as exc:
-        await _touch_user_frontier(db, frontier_id, user_id, error=str(exc))
+        await _record(db, user_id, "fetch_error", error=str(exc))
         return {"user_id": user_id, "status": "fetch_error", "error": str(exc)}
 
     now = utcnow()
 
     if response.from_cache:
-        await _touch_user_frontier(db, frontier_id, user_id, etag=etag, last_modified=last_modified)
+        await _record(db, user_id, "not_modified", etag=etag, last_modified=last_modified)
         await db.users.update_one({"_id": user_id}, {"$set": {"last_crawled": now}})
         return {"user_id": user_id, "status": "not_modified"}
 
@@ -62,17 +57,17 @@ async def crawl_user(
         await db.users.update_one(
             {"_id": user_id}, {"$set": {"gone": True, "last_crawled": now}}
         )
-        await _touch_user_frontier(db, frontier_id, user_id, tier="frozen")
+        await _record(db, user_id, "gone")
         return {"user_id": user_id, "status": "gone"}
 
     if not response.ok:
-        await _touch_user_frontier(db, frontier_id, user_id, error=f"http {response.status}")
+        await _record(db, user_id, "http_error", error=f"http {response.status}")
         return {"user_id": user_id, "status": "http_error", "code": response.status}
 
     try:
         parsed = parse_user_page(response.text, user_id)
     except ParseError as exc:
-        await _touch_user_frontier(db, frontier_id, user_id, error=f"parse: {exc}")
+        await _record(db, user_id, "parse_error", error=f"parse: {exc}")
         log.error("parse failure on user %s: %s", user_id, exc)
         return {"user_id": user_id, "status": "parse_error", "error": str(exc)}
 
@@ -80,11 +75,13 @@ async def crawl_user(
         summary = await ingest_user(db, parsed, now=now)
     except UserAnomalyRejected as exc:
         log.error("anomaly on user %s: %s", user_id, exc)
-        await _touch_user_frontier(db, frontier_id, user_id, error=f"anomaly: {exc}")
+        await _record(db, user_id, "anomaly", error=f"anomaly: {exc}")
         return {"user_id": user_id, "status": "anomaly", "error": str(exc)}
 
-    await _touch_user_frontier(
-        db, frontier_id, user_id, etag=response.etag, last_modified=response.last_modified
+    await _record(
+        db, user_id, "ok",
+        changed=None if summary["first_ingest"] else bool(summary["changed"]),
+        etag=response.etag, last_modified=response.last_modified,
     )
 
     if with_projects:
@@ -178,9 +175,7 @@ async def resolve_project_owners(
     return {"pending": len(handles), "resolved": resolved, "failed": failed}
 
 
-async def _touch_user_frontier(
-    db: AsyncIOMotorDatabase, frontier_id: str, user_id: int, **kwargs: Any
+async def _record(
+    db: AsyncIOMotorDatabase, user_id: int, status: str, **kwargs: Any
 ) -> None:
-    await _touch_frontier(
-        db, frontier_id, user_id, kind="user", url=USER_PATH.format(id=user_id), **kwargs
-    )
+    await frontier_store.record_crawl(db, "user", user_id, status=status, **kwargs)

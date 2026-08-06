@@ -15,3 +15,10 @@ hist.json
 
 # mixid stuff
 mine/
+
+# proxy lists, however the provider names the download
+proxies.txt
+*proxies*.txt
+
+#temp
+/tests/fixtures

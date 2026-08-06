@@ -191,11 +191,7 @@ async def leaderboard(
     ),
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
-    """Our own ranking, computed from crawled rows.
-
-    A user whose projects are not all crawled under-ranks, so every row carries
-    a complete flag and complete_only filters to the rows that are.
-    """
+    """Our own ranking, computed from crawled rows."""
     field = LEADERBOARD_METRICS.get(metric)
     if field is None:
         raise HTTPException(

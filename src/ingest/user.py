@@ -20,8 +20,7 @@ PROFILE_STATS = (
     "streak", "achievements_earned",
 )
 
-# Figures we compute from our own rows. Rates and estimates stay out: they are
-# derivable from these at query time, so a formula change cannot strand history.
+# Rates and estimates stay out, so a formula change cannot strand history.
 COMPUTED_TOTALS = (
     "ship_stardust", "hours", "shipped_hours", "paid_hours", "likes_received",
     "comments_received", "reposts_received", "views_received",
@@ -155,10 +154,7 @@ async def ingest_user(
 async def link_user_id(
     db: AsyncIOMotorDatabase, user_id: int, username: str
 ) -> dict[str, int]:
-    """Stamp the numeric id onto rows crawled knowing only a handle.
-
-    Project pages expose no user id, so those rows wait for the user crawl.
-    """
+    """Stamp the numeric id onto rows crawled knowing only a handle."""
     handle = username.lower()
 
     owner = await db.projects.update_many(
@@ -185,11 +181,7 @@ async def link_user_id(
 async def recompute_user_totals(
     db: AsyncIOMotorDatabase, user_id: int
 ) -> dict[str, Any]:
-    """Roll a user's crawled rows into ranking figures, plus a coverage flag.
-
-    Named ship_stardust because that is all it counts. Upstream also grants
-    Stardust for achievements, missions and reviews, none of it public.
-    """
+    """Roll a user's crawled rows into ranking figures, plus a coverage flag."""
     ships = await db.ships.aggregate([
         {"$match": {"user_id": user_id}},
         {"$group": {
@@ -242,9 +234,7 @@ async def recompute_user_totals(
         "best_multiplier": s.get("best_multiplier"),
         "avg_multiplier": round(s["avg_multiplier"], 3) if s.get("avg_multiplier") else None,
     }
-    # Rate over the hours payouts were actually for, not every hour logged
-    # or every shipped hour. Not the ship multiplier either, since payouts
-    # run on hours capped at 10h per devlog (see ingest.project.payout_hours).
+    # Over the hours payouts were actually for, not every hour logged.
     totals["stardust_per_paid_hour"] = (
         round(totals["ship_stardust"] / paid_hours, 2) if paid_hours else None
     )
@@ -294,12 +284,7 @@ async def missing_project_ids(
 
 
 def _is_complete(coverage: dict[str, Any]) -> bool:
-    """True when we hold every project the account lists.
-
-    Deliberately not a devlog/ship count match: `devlogs_reported` and
-    `ships_reported` include deleted devlogs and rejected ships upstream,
-    none of which any public page renders, so equality is unreachable.
-    """
+    """True when we hold every project the account lists."""
     if coverage.get("projects_listed") is None:
         return False
     if coverage.get("projects_missing"):

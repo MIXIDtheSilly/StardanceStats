@@ -33,6 +33,15 @@ class ParseResult:
             self.data[key] = value
             self.found.add(key)
 
+    def set_optional(self, key: str, value: Any, *, present: bool) -> None:
+        """Record a field whose emptiness is a fact rather than a failure."""
+        if not present:
+            self.missing.add(key)
+            return
+        self.found.add(key)
+        if value is not None:
+            self.data[key] = value
+
     def warn(self, message: str) -> None:
         self.warnings.append(message)
 
@@ -85,10 +94,7 @@ def to_float(value: str | None) -> float | None:
 
 
 def parse_duration_seconds(value: str | None) -> int | None:
-    """Parse format_seconds output ('1h 28m 9s logged') into seconds.
-
-    None when no duration token is present, so absent stays distinct from zero.
-    """
+    """Parse format_seconds output ('1h 28m 9s logged') into seconds."""
     if value is None:
         return None
     units = {"d": 86400, "h": 3600, "m": 60, "s": 1}

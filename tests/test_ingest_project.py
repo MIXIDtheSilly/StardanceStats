@@ -97,9 +97,7 @@ def test_estimate_never_reports_negative_unpaid_hours():
 
 
 def test_payout_hours_recover_the_capped_basis(parsed):
-    """Payout runs on hours capped at 10h per devlog, which the card never
-    shows. Ship 1 has one devlog over the cap, so its payout basis sits below
-    the 133h it displays; ship 2 has none and lands on its 32h."""
+    """Payout runs on hours capped at 10h per devlog, which the card never shows."""
     s1, s2 = sorted(parsed.data["ships"], key=lambda s: s["shipped_at"])
 
     assert payout_hours(s1) == pytest.approx(121.8, abs=0.1)

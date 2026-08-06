@@ -9,11 +9,11 @@ from pymongo import ReplaceOne, UpdateOne
 
 from ..config import settings
 from ..parsers.common import ParseResult, utcnow
+from .mission import assign_payout_paths, load_missions, mission_pending
 
 log = logging.getLogger(__name__)
 
-# Counters that only go up in reality. A large fall means a parse failure;
-# a small one is ordinary moderation, such as a deleted devlog.
+# A large fall means a parse failure; a small one is ordinary moderation.
 MONOTONIC = ("devlogs", "total_hours", "stardust_total", "ships")
 
 # Fields whose change is worth a new snapshot.
@@ -29,9 +29,15 @@ class AnomalyRejected(Exception):
 
 
 def build_stats(
-    project: dict[str, Any], devlogs: list[dict[str, Any]], ships: list[dict[str, Any]]
+    project: dict[str, Any],
+    devlogs: list[dict[str, Any]],
+    ships: list[dict[str, Any]],
+    missions: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Roll cards up into the project's stat block."""
+    missions = missions or {}
+    assign_payout_paths(ships, missions)
+
     summed_hours = sum(d.get("duration_seconds") or 0 for d in devlogs) / 3600.0
     multipliers = [s["multiplier"] for s in ships if s.get("multiplier") is not None]
     payouts = [s["payout"] for s in ships if s.get("payout") is not None]
@@ -44,8 +50,7 @@ def build_stats(
 
     stardust_total = sum(payouts) if payouts else 0
 
-    # A ship pays out only once its review window closes, so shipped and paid
-    # hours are different sets, kept apart to avoid diluting the rate.
+    # A ship pays out only once its review closes, so these differ.
     shipped_hours = _hours_of(ships)
     paid_hours = _hours_of([s for s in ships if s.get("payout") is not None])
 
@@ -65,13 +70,18 @@ def build_stats(
         "latest_multiplier": latest.get("multiplier") if latest else None,
         "avg_multiplier": round(sum(multipliers) / len(multipliers), 3) if multipliers else None,
     }
-    # Payouts over the hours those payouts were for; dividing by every hour
-    # logged instead would mix paid and unpaid hours. Not the multiplier
-    # either, since payouts run on capped hours (see payout_hours()).
+    # Over the hours those payouts were for; every hour logged mixes the two.
     stats["stardust_per_paid_hour"] = (
         round(stardust_total / paid_hours, 2) if paid_hours else None
     )
-    stats.update(estimate_unpaid(stardust_total, summed_hours, paid_hours))
+
+    pending = mission_pending(ships, missions)
+    stats.update(estimate_unpaid(
+        stardust_total, summed_hours, paid_hours,
+        mission_hours=pending["hours"], mission_stardust=pending["stardust"],
+    ))
+    stats["fixed_payout_hours"] = pending["fixed_payout_hours"]
+    stats["flat_rate_hours"] = pending["flat_rate_hours"]
     return stats
 
 
@@ -81,37 +91,41 @@ def _hours_of(ships: list[dict[str, Any]]) -> float | None:
 
 
 def estimate_unpaid(
-    stardust: int, logged_hours: float, paid_hours: float | None
+    stardust: int,
+    logged_hours: float,
+    paid_hours: float | None,
+    *,
+    mission_hours: float = 0.0,
+    mission_stardust: int = 0,
 ) -> dict[str, Any]:
-    """Value every hour that has not been paid for yet.
-
-    Covers hours in a ship under review and hours not yet shipped at all,
-    priced at the realised stardust-per-paid-hour rate. Needs a paid ship to
-    derive that rate from, so an account with none gets no estimate.
-    """
+    """Value every hour that has not been paid for yet."""
     unpaid = round(max(logged_hours - (paid_hours or 0.0), 0.0), 2)
-    if not paid_hours or not stardust:
-        return {
-            "unpaid_hours": unpaid,
-            "estimated_pending_stardust": None,
-            "estimated_total_stardust": None,
-        }
+    # A mission pays its own hours at its own terms, never at the voting rate.
+    ratable = round(max(unpaid - mission_hours, 0.0), 2)
 
-    pending = round(unpaid * (stardust / paid_hours))
-    return {
+    out: dict[str, Any] = {
         "unpaid_hours": unpaid,
-        "estimated_pending_stardust": pending,
-        "estimated_total_stardust": stardust + pending,
+        "ratable_unpaid_hours": ratable,
+        "mission_pending_hours": round(mission_hours, 2),
+        "mission_pending_stardust": mission_stardust,
+        "estimated_pending_stardust": None,
+        "estimated_total_stardust": None,
     }
+
+    if paid_hours and stardust:
+        out["estimated_pending_stardust"] = (
+            round(ratable * (stardust / paid_hours)) + mission_stardust
+        )
+    elif mission_stardust:
+        out["estimated_pending_stardust"] = mission_stardust
+
+    if out["estimated_pending_stardust"] is not None:
+        out["estimated_total_stardust"] = stardust + out["estimated_pending_stardust"]
+    return out
 
 
 def payout_hours(ship: dict[str, Any]) -> float | None:
-    """The hours a payout was actually computed on.
-
-    Upstream pays on `hours_at_payout` (devlogs capped at 10h each), which is
-    never rendered, so this recovers it from payout / multiplier. Accurate to
-    roughly 0.1%, not exact, since both inputs are display-rounded.
-    """
+    """The hours a payout was actually computed on."""
     payout = ship.get("payout")
     multiplier = ship.get("multiplier")
     if not payout or not multiplier:
@@ -157,6 +171,7 @@ async def ingest_project(
     *,
     now: datetime | None = None,
     force_snapshot: bool = False,
+    missions: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Persist one parsed project page. Returns a summary of what changed."""
     now = now or utcnow()
@@ -168,7 +183,11 @@ async def ingest_project(
     for ship in ships:
         ship["payout_hours"] = payout_hours(ship)
 
-    stats = build_stats(project, devlogs, ships)
+    if missions is None:
+        missions = await load_missions(db)
+    _check_known_missions(project, ships, missions, result)
+
+    stats = build_stats(project, devlogs, ships, missions)
     existing = await db.projects.find_one({"_id": pid})
     previous_stats = (existing or {}).get("stats")
 
@@ -187,6 +206,7 @@ async def ingest_project(
         "members": project.get("members", []),
         "is_hardware": project.get("is_hardware", False),
         "is_super_star": project.get("is_super_star", False),
+        "mission": project.get("mission"),
         "repo_url": project.get("repo_url"),
         "demo_url": project.get("demo_url"),
         "banner_url": project.get("banner_url"),
@@ -200,17 +220,26 @@ async def ingest_project(
             (d["posted_at"] for d in devlogs if d.get("posted_at")), default=None
         )
 
-    # The award details only render while the event card is on the timeline;
-    # keep the ones we have rather than blanking them when it ages out.
+    # The card ages off the timeline, so keep what we already have.
     if project.get("super_star_at"):
         doc["super_star_at"] = project["super_star_at"]
         doc["super_star_by"] = project.get("super_star_by")
         doc["super_star_note"] = project.get("super_star_note")
 
+    if (existing or {}).get("owner_username") and not doc["owner_username"]:
+        # Legitimate, but it unlinks the project from that user's totals.
+        result.warn(
+            f"owner {existing['owner_username']!r} no longer rendered on the byline"
+        )
+
     if (existing or {}).get("is_super_star") and not doc["is_super_star"]:
-        # Presence-only markup: an admin un-marking and a renamed badge class
-        # look identical here, so say so out loud rather than flipping quietly.
+        # Presence-only markup: un-marked and renamed look identical here.
         result.warn("Super Star badge disappeared; was set on a previous crawl")
+
+    was = ((existing or {}).get("mission") or {}).get("slug")
+    if was and not (doc["mission"] or {}).get("slug"):
+        # Upstream never unsets it after a ship, so this is a detach or a break.
+        result.warn(f"mission {was!r} no longer rendered on the panel")
 
     changed = _changed_keys(previous_stats, stats)
     if changed or first_ingest:
@@ -249,12 +278,24 @@ async def ingest_project(
     }
 
 
-async def _link_known_users(db: AsyncIOMotorDatabase, project: dict[str, Any]) -> set[int]:
-    """Stamp user ids onto this project's rows for handles we already know.
+def _check_known_missions(
+    project: dict[str, Any],
+    ships: list[dict[str, Any]],
+    missions: dict[str, dict[str, Any]],
+    result: ParseResult,
+) -> None:
+    """An unknown mission means its ships get priced as if they were rated."""
+    if not missions:
+        return
+    named = {s.get("mission_slug") for s in ships}
+    named.add((project.get("mission") or {}).get("slug"))
+    unknown = sorted(s for s in named if s and s not in missions)
+    if unknown:
+        result.warn(f"mission(s) {unknown} not crawled yet; payout terms unknown")
 
-    Without this a project crawled after its owner keeps handle-only rows.
-    Returns the ids touched so their totals can be recomputed.
-    """
+
+async def _link_known_users(db: AsyncIOMotorDatabase, project: dict[str, Any]) -> set[int]:
+    """Stamp user ids onto this project's rows for handles we already know."""
     pid = project["_id"]
     owner = project.get("owner_username")
     names = list(project.get("members") or [])
@@ -356,11 +397,7 @@ async def backfill_project_history(
     current: dict[str, Any],
     now: datetime,
 ) -> int:
-    """Reconstruct daily history from timestamps the page already gave us.
-
-    Engagement exposes only current totals, so those series cannot be
-    reconstructed and start at first crawl.
-    """
+    """Reconstruct daily history from timestamps the page already gave us."""
     dated = sorted(
         ((d["posted_at"], d.get("duration_seconds") or 0) for d in devlogs if d.get("posted_at")),
         key=lambda x: x[0],

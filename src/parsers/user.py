@@ -26,11 +26,7 @@ STAT_LABELS = ("devlogs", "projects", "ships", "votes")
 
 
 def parse_user_page(html: str, user_id: int | None = None) -> ParseResult:
-    """Parse a profile page into a user document.
-
-    Omit user_id when fetching by handle; the og tags carry the numeric id.
-    Works on any profile tab; fetch the projects tab to also get project_ids.
-    """
+    """Parse a profile page into a user document."""
     tree = HTMLParser(html)
     result = ParseResult()
 
@@ -97,11 +93,7 @@ def parse_user_page(html: str, user_id: int | None = None) -> ParseResult:
 
 
 def _streak(tree: HTMLParser) -> int | None:
-    """Days in the user's current posting streak.
-
-    The badge renders only while a streak is alive, so absence means 0, not
-    None. None is reserved for a present badge whose wording fails to parse.
-    """
+    """Days in the user's current posting streak."""
     badge = tree.css_first(".streak-badge")
     if badge is None:
         return 0
@@ -118,11 +110,7 @@ def _streak(tree: HTMLParser) -> int | None:
 
 
 def _project_ids(tree: HTMLParser) -> list[int] | None:
-    """Every project the user belongs to, or None if this is not that tab.
-
-    Only the /users/:id/projects tab renders this list. Elsewhere an empty
-    result must not read as "owns no projects", hence None rather than [].
-    """
+    """Every project the user belongs to, or None if this is not that tab."""
     panel = tree.css_first('.profile-tab-content[aria-label="Projects"]')
     if panel is None:
         return None

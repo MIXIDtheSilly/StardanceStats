@@ -1,8 +1,3 @@
-"""Super Star is `projects.marked_fire_at` upstream, surfaced two ways: a
-header badge and a Post::FireEvent card in the timeline. The badge is
-presence-only, so a renamed class would silently read as "not a Super Star"
-rather than as a break. Reading both sources keeps that honest."""
-
 from __future__ import annotations
 
 from datetime import datetime, timezone
