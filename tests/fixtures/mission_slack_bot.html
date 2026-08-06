@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Make a Slack Bot - Stardance</title>
+    <link rel="icon" type="image/png" href="https://stardance.hackclub.com/assets/favicon-cdc48065.png" />
+    <link rel="apple-touch-icon" type="image/png" href="https://stardance.hackclub.com/apple-touch-icon.png" sizes="180x180" />
+    <meta name="apple-mobile-web-app-title" content="Stardance">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta property="og:type" content="website">
+    <meta name="twitter:site" content="@hackclub">
+    <meta name="twitter:creator" content="@hackclub">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="Stardance - Hack Club">
+    <meta name="theme-color" content="#FFE564">
+
+
+    <meta name="description" content="Make a slack bot that can respond to custom slash commands!">
+    <meta property="og:title" content="Make a Slack Bot — Stardance Mission">
+    <meta property="og:description" content="Make a slack bot that can respond to custom slash commands!">
+    <meta property="og:url" content="https://stardance.hackclub.com/missions/slack-bot">
+    <meta property="og:image" content="https://stardance.hackclub.com/missions/slack-bot/og_image">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Make a Slack Bot — Stardance Mission">
+    <meta name="twitter:description" content="Make a slack bot that can respond to custom slash commands!">
+    <meta name="twitter:image" content="https://stardance.hackclub.com/missions/slack-bot/og_image">
+    
+
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="VEFUvykhhMFSrMMvUc02OEmQO910MlTQs4f-u1P4Nr4QCNw6-nWPC5uXmxZOOMJ3NWMIpBTOoTa7cNTznsFLmQ" />
+    
+    <meta name="turbo-prefetch" content="false">
+    <meta name="active-nav-slug" content="missions">
+
+    
+    <link rel="preload" href="https://stardance.hackclub.com/assets/Roboto-804fdbde.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+
+    
+      <script>
+    window['_fs_host'] = 'fullstory.com';
+    window['_fs_script'] = 'edge.fullstory.com/s/fs.js';
+    window['_fs_org'] = 'ARN0J';
+    window['_fs_namespace'] = 'FS';
+    (function(m,n,e,t,l,o,g,y){
+      if (e in m) { if (m.console && m.console.log) { m.console.log('FullStory namespace conflict. Please set window["_fs_namespace"].'); } return; }
+      g=m[e]=function(a,b,s){g.q?g.q.push([a,b,s]):g._api(a,b,s);};g.q=[];
+      o=n.createElement(t);o.async=1;o.crossOrigin='anonymous';o.src='https://'+_fs_script;
+      y=n.getElementsByTagName(t)[0];y.parentNode.insertBefore(o,y);
+      g.identify=function(i,v,s){g(l,{uid:i},s);if(v)g(l,v,s)};
+      g.setUserVars=function(v,s){g(l,v,s)};
+      g.event=function(i,v,s){g('event',{n:i,p:v},s)};
+      g.anonymize=function(){g.identify(!!0)};
+      g.shutdown=function(){g("rec",!1)};
+      g.restart=function(){g("rec",!0)};
+      g.log=function(a,b){g("log",[a,b])};
+      g.consent=function(a){g("consent",!arguments.length||a)};
+      g.identifyAccount=function(i,v){o='account';v=v||{};v.acctId=i;g(o,v)};
+      g.clearUserCookie=function(){};
+      g.setVars=function(n,p){g('setVars',[n,p]);};
+      g._hierarchyRecordingEnabled=true;
+      g._hierarchyDefaultRegion='main';
+    })(window,document,window['_fs_namespace'],'script','user');
+  </script>
+
+
+    
+    <link rel="stylesheet" href="https://stardance.hackclub.com/assets/application-d00ae1e7.css" data-turbo-track="reload" />
+      <script async src="https://plausible.io/js/pa-8UNXJ41xxW9knU4pKr95g.js"></script>
+      <script>
+        window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+        plausible.init()
+      </script>
+      <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18182651878"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-18182651878');
+      </script>
+    <script src="https://stardance.hackclub.com/assets/application-7b8e6541.js" data-turbo-track="reload" type="module"></script>
+    <meta name="sentry-trace" content="905da22ab7504b0ba18b3f5a1b58f35e-da1bf77797af4bf6-1">
+<meta name="baggage" content="sentry-trace_id=905da22ab7504b0ba18b3f5a1b58f35e,sentry-sample_rate=1.0,sentry-sample_rand=0.574417,sentry-sampled=true,sentry-environment=production,sentry-public_key=128c1f8988d2f77be887915507fa1e06,sentry-org_id=40609"> 
+  <script data-cfasync="false" nonce="bc4669a9-776e-47f3-bee3-7b8bd9e80bde">try{(function(w,d){!function(mJ,mK,mL,mM){if(mJ.zaraz)console.error("zaraz is loaded twice");else{mJ[mL]=mJ[mL]||{};mJ[mL].executed=[];mJ.zaraz={deferred:[],listeners:[]};mJ.zaraz._v="20";mJ.zaraz._n="bc4669a9-776e-47f3-bee3-7b8bd9e80bde";mJ.zaraz.q=[];mJ.zaraz._f=function(mN){return async function(){var mO=Array.prototype.slice.call(arguments);mJ.zaraz.q.push({m:mN,a:mO})}};for(const mP of["track","set","debug"])mJ.zaraz[mP]=mJ.zaraz._f(mP);mJ.zaraz.init=()=>{var mQ=mK.getElementsByTagName(mM)[0],mR=mK.createElement(mM),mS=mK.getElementsByTagName("title")[0];mS&&(mJ[mL].t=mK.getElementsByTagName("title")[0].text);mJ[mL].x=Math.random();mJ[mL].w=mJ.screen.width;mJ[mL].h=mJ.screen.height;mJ[mL].j=mJ.innerHeight;mJ[mL].e=mJ.innerWidth;mJ[mL].l=mJ.location.href;mJ[mL].r=mK.referrer;mJ[mL].k=mJ.screen.colorDepth;mJ[mL].n=mK.characterSet;mJ[mL].o=(new Date).getTimezoneOffset();if(mJ.dataLayer)for(const mT of Object.entries(Object.entries(dataLayer).reduce((mU,mV)=>({...mU[1],...mV[1]}),{})))zaraz.set(mT[0],mT[1],{scope:"page"});mJ[mL].q=[];for(;mJ.zaraz.q.length;){const mW=mJ.zaraz.q.shift();mJ[mL].q.push(mW)}mR.defer=!0;for(const mX of[localStorage,sessionStorage])Object.keys(mX||{}).filter(mZ=>mZ.startsWith("_zaraz_")).forEach(mY=>{try{mJ[mL]["z_"+mY.slice(7)]=JSON.parse(mX.getItem(mY))}catch{mJ[mL]["z_"+mY.slice(7)]=mX.getItem(mY)}});mR.referrerPolicy="origin";mR.src="/cdn-cgi/zaraz/s.js?z="+btoa(encodeURIComponent(JSON.stringify(mJ[mL])));mQ.parentNode.insertBefore(mR,mQ)};["complete","interactive"].includes(mK.readyState)?zaraz.init():mJ.addEventListener("DOMContentLoaded",zaraz.init)}}(w,d,"zarazData","script");window.zaraz._p=async nv=>new Promise(nw=>{if(nv){nv.e&&nv.e.forEach(nx=>{try{const ny=d.querySelector("script[nonce]"),nz=ny?.nonce||ny?.getAttribute("nonce"),nA=d.createElement("script");nz&&(nA.nonce=nz);nA.innerHTML=nx;nA.onload=()=>{d.head.removeChild(nA)};d.head.appendChild(nA)}catch(nB){console.error(`Error executing script: ${nx}\n`,nB)}});Promise.allSettled((nv.f||[]).map(nC=>fetch(nC[0],nC[1])))}nw()});zaraz._p({"e":["(function(w,d){})(window,document)"]});})(window,document)}catch(e){throw fetch("/cdn-cgi/zaraz/t"),e;};</script></head>
+
+  <body class="signed-in app-layout-page ">
+      <div class="app-loading" aria-hidden="true">
+        <div class="app-loading__inner">
+          <img alt="" class="app-loading__logo" src="https://stardance.hackclub.com/assets/landing/header/stardance-logo-df399a7f.png" />
+          <span class="app-loading__spinner"></span>
+        </div>
+      </div>
+    <div class="top-banners">
+    </div>
+      <aside class="sidebar"
+       id="primary-nav"
+       data-controller="sidebar-active nav-history"
+       data-turbo-permanent
+       aria-label="Main">
+  <a class="sidebar__logo" aria-label="Stardance home" data-turbo="true" href="/">
+    <img alt="Hack Club Stardance Challenge" class="sidebar__logo-img" src="https://stardance.hackclub.com/assets/landing/header/stardance-logo-df399a7f.png" />
+</a>
+  <nav class="sidebar__nav" aria-label="Primary navigation">
+    <ul class="sidebar__nav-list">
+
+        <li class="sidebar__nav-item" data-onboarding-target="home">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="home" href="/home">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/rocket-ae0562a3.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/rocket_active-fe1cbdba.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">home</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="rate">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="rate" href="/rate/new">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/box-78dc97de.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/box_active-09267c74.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">rate</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="missions">
+
+
+            <a class="sidebar__nav-link sidebar__nav-link--active" aria-current="page" data-turbo="true" data-slug="missions" href="/missions">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/calendar-0946a93c.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/calendar_active-f0f440ea.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">missions</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="shop">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="shop" href="/shop">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/cart-e343ed9d.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/cart_active-5d9284ca.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">shop</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="resources">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="resources" href="/resources">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/book-cf3c9ead.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/book_active-38491ddd.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">resources</span>
+
+</a>        </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar__user" aria-live="polite">
+      <div class="sidebar__guest-cta">
+        <a class="sidebar__guest-cta-btn" href="/">Sign up</a>
+      </div>
+  </div>
+
+</aside>
+
+    <div id="flash-region">
+</div>
+    <div class="guest-banner" role="status">
+    <p class="guest-banner__copy">
+      You are browsing as a guest.
+      <a class="guest-banner__link" href="/">Sign up</a>
+      (or <a class="guest-banner__link" href="/">log in</a>) to start making projects!
+    </p>
+</div>
+
+
+<div class="app-layout">
+  <div class="app-layout__main">
+    <article class="mission-home">
+      <p class="mission-home__crumb">
+        <span class="mission-home__crumb-links">
+          <a class="mission-home__crumb-link" href="/missions">Missions</a>
+        </span>
+      </p>
+
+
+
+      <section class="mission-home__hero">
+        <img alt="" aria-hidden="true" class="mission-home__hero-creature" src="https://stardance.hackclub.com/assets/missions/card-star-9607bc8b.png" />
+
+        <div class="mission-home__hero-top">
+          <div class="mission-patch" style="--mission-patch-size: 132px; --mission-patch-ring-inset: 13px;">
+  <div class="mission-patch__ring"></div>
+  <div class="mission-patch__icon">
+      <img alt="" class="mission-patch__icon-img" width="98" height="98" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTQyNCwicHVyIjoiYmxvYl9pZCJ9fQ==--96653f7bd5787b0c07b5e7cd7711326bc9583687/Slack_icon_2019.svg.png" />
+  </div>
+  <svg class="mission-patch__curve-svg" viewBox="0 0 132 132" aria-hidden="true">
+    <defs>
+      <path id="mission-patch-top-1-132"
+            d="M9.980000000000004,66.0 a56.019999999999996,56.019999999999996 0 0,1 112.03999999999999,0"
+            fill="none" />
+      <path id="mission-patch-bottom-1-132"
+            d="M4.0,66.0 a62.0,62.0 0 0,0 124.0,0"
+            fill="none" />
+    </defs>
+    <text font-size="8.3"
+          fill="#FFE564"
+          letter-spacing="2.66"
+          font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <textPath href="#mission-patch-top-1-132" startOffset="50%" text-anchor="middle">
+        ★ STARDANCE ★
+      </textPath>
+    </text>
+    <text font-size="8.3"
+          fill="#FFE564"
+          letter-spacing="1.83"
+          font-family="ui-monospace, SF Mono, Menlo, monospace">
+      <textPath href="#mission-patch-bottom-1-132" startOffset="50%" text-anchor="middle">
+        MAKE A SLACK BOT
+      </textPath>
+    </text>
+  </svg>
+</div>
+
+
+          <div class="mission-home__hero-text">
+            <ul class="mission-home__hero-chips">
+              <li class="mission-home__hero-chip mission-home__hero-chip--status mission-home__hero-chip--status-not-started">
+                <span class="mission-home__hero-chip-dot" aria-hidden="true">○</span> not started
+              </li>
+                <li class="mission-home__hero-chip mission-home__hero-chip--difficulty mission-home__hero-chip--difficulty-beginner">
+                  beginner
+                </li>
+                <li class="mission-home__hero-chip mission-home__hero-chip--time">~1 hr 30 min</li>
+                <li class="mission-home__hero-chip mission-home__hero-chip--sections">8 sections</li>
+            </ul>
+
+            <h1 class="mission-home__hero-title">
+              <em class="mission-home__hero-title-accent">Make a Slack Bot</em>
+            </h1>
+          </div>
+        </div>
+
+        <div class="mission-home__hero-brief"><p>Make a slack bot that can respond to custom slash commands!</p>
+</div>
+
+
+        <div class="mission-home__hero-actions">
+              <form class="mission-home__cta-form" method="post" action="/projects/setup/missions"><button data-turbo="false" class="action-btn action-btn--large action-btn--primary" type="submit">Create a project</button><input type="hidden" name="authenticity_token" value="ZP1vJ8_10C3282prYcrEaouahYLDzVu3ekDf2z8Qxs7FPJsWo_3nMxg1dXWbPS98BUdd0FounlXQlMnPQOH-AQ" autocomplete="off" /><input type="hidden" name="mission_slug" value="slack-bot" autocomplete="off" /></form>
+            <a data-turbo="false" class="action-btn action-btn--large action-btn--secondary" href="/missions/slack-bot/guide">Preview guide</a>
+        </div>
+      </section>
+
+      <div class="mission-home__columns">
+          <section class="mission-home__card mission-home__requirements"
+                   aria-labelledby="mission-home-requirements">
+            <h2 id="mission-home-requirements" class="mission-home__card-title">
+              Submission <em class="mission-home__card-title-accent">requirements</em>
+            </h2>
+              <ol class="mission-home__criteria">
+      <li class="mission-home__criterion mission-home__criterion--mint">
+        <span class="mission-home__criterion-number" aria-hidden="true">1</span>
+        <span class="mission-home__criterion-text"><p>Your bot is live and responds to messages</p>
+</span>
+      </li>
+      <li class="mission-home__criterion mission-home__criterion--peach">
+        <span class="mission-home__criterion-number" aria-hidden="true">2</span>
+        <span class="mission-home__criterion-text"><p>There are at least 3 different commands / functions</p>
+</span>
+      </li>
+      <li class="mission-home__criterion mission-home__criterion--lilac">
+        <span class="mission-home__criterion-number" aria-hidden="true">3</span>
+        <span class="mission-home__criterion-text"><p>Your commands don’t collide with anyone elses’</p>
+</span>
+      </li>
+      <li class="mission-home__criterion mission-home__criterion--mint">
+        <span class="mission-home__criterion-number" aria-hidden="true">4</span>
+        <span class="mission-home__criterion-text"><p>Your bot is live 24/7, even when your laptop is closed</p>
+</span>
+      </li>
+  </ol>
+
+          </section>
+
+        <section class="mission-home__card mission-home__rewards"
+                 aria-labelledby="mission-home-rewards">
+            <h2 id="mission-home-rewards" class="mission-home__card-title">
+              <em class="mission-home__card-title-accent">Prizes</em>
+            </h2>
+            <ul class="mission-home__prize-list">
+
+
+              <li class="mission-home__prize mission-home__prize--salmon">
+  <div class="mission-home__prize-tile">
+    <span class="mission-home__rating-icon mission-home__rating-icon--excluded">
+      <img alt="" class="mission-home__rating-img" src="https://stardance.hackclub.com/assets/icons/box-78dc97de.png" />
+    </span>
+  </div>
+  <div class="mission-home__prize-body">
+      <p class="mission-home__prize-title">Not rated</p>
+      <p class="mission-home__prize-blurb">
+        Projects shipped to this mission will not be rated and will instead get a fixed payout.
+        <button type="button" class="mission-home__prize-info-link"
+                onclick="document.getElementById(&quot;rating-info-modal-1&quot;).showModal()">See more info →</button>
+      </p>
+  </div>
+
+    <dialog id="rating-info-modal-1" class="rating-info-modal" data-controller="modal"
+            aria-labelledby="rating-info-modal-1-title">
+      <div class="rating-info-modal__panel">
+        <button type="button" class="rating-info-modal__close"
+                onclick="document.getElementById(&quot;rating-info-modal-1&quot;).close()"
+                aria-label="Close">&times;</button>
+        <h3 id="rating-info-modal-1-title" class="rating-info-modal__title">Fixed payout</h3>
+        <p class="rating-info-modal__text">
+          Rather than being rated, projects shipped to this fixed-payout mission will get:
+          <strong>30 stardust</strong> instead.
+        </p>
+        <p class="rating-info-modal__text">
+          Once you've shipped once to the mission, future ships will be rated normally, so if you
+          want to work on a project for this mission beyond the base requirements, ship once when
+          you've completed the base requirements and then work on adding new features and reship.
+        </p>
+      </div>
+    </dialog>
+</li>
+
+                <li class="mission-home__prize mission-home__prize--yellow">
+                  <div class="mission-home__prize-tile">
+                    <img alt="Stardust" class="currency-icon mission-home__prize-img" src="https://stardance.hackclub.com/assets/icons/stardust-18e809ef.png" />
+                  </div>
+                  <div class="mission-home__prize-body">
+                    <p class="mission-home__prize-title">30 stardust</p>
+                    <p class="mission-home__prize-blurb">Yours to spend in the shop!</p>
+                  </div>
+                </li>
+            </ul>
+        </section>
+      </div>
+
+        <section class="mission-home__gallery" aria-labelledby="mission-home-gallery">
+          <h2 id="mission-home-gallery" class="mission-home__section-title">
+            Projects for this <em class="mission-home__section-title-accent">mission</em>
+          </h2>
+          <div class="mission-home__gallery-grid" role="list">
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--in-progress">In progress</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="7330" href="/projects/7330">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6Mjc5MDUsInB1ciI6ImJsb2JfaWQifX0=--acbc827e527ebc5a5d0f84b0c03f3802035469a2/SlackyBOT.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">My first slack bot!</span>
+      <span class="project-shelf-card__description">A fully deployed Slack bot featuring Gemini AI, weather reports, calculator utilities, memes, jokes, fun facts, and p...</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--in-progress">In progress</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="35280" href="/projects/35280">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTcyODI4LCJwdXIiOiJibG9iX2lkIn19--51b4b22e7e3afcab017f7ab9b662a4d4d9b1c505/Screenshot%202026-07-18%20114332.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">My first slack bot!</span>
+      <span class="project-shelf-card__description">This bot isn't slacking off, it replies to messages 24/7!</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="2143" href="/projects/2143">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTc4OTMsInB1ciI6ImJsb2JfaWQifX0=--ff7d65d33718e065b45ea0e0bbc12bfb1d2d96d8/Screenshot%202026-06-03%20171951.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">My first slack bot!</span>
+      <span class="project-shelf-card__description">This bot isn't slacking off, it replies to messages 24/7!</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="37349" href="/projects/37349">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTkzOTI3LCJwdXIiOiJibG9iX2lkIn19--bdbc24b1cfac53479c87bc49111d0a4430bad625/slack.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">T&quot;eXpress&quot; - TeXt it. Express it.</span>
+      <span class="project-shelf-card__description">A Slack bot that helps everyone render TeX and perform basic calculations.</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="25782" href="/projects/25782">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTAyMTEzLCJwdXIiOiJibG9iX2lkIn19--c07e26a14b666c2a87970977e706f82dd5cd14d1/IMG_4411.jpeg" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">Asa Chan</span>
+      <span class="project-shelf-card__description">A Slack bot that sends daily weather updates.</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="4283" href="/projects/4283">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTMzNzUsInB1ciI6ImJsb2JfaWQifX0=--fcbc2df3ea359e7563fbdb2f97129615d66e1291/Screenshot%202026-06-02%20at%203.55.24%E2%80%AFPM.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">My first slack bot!</span>
+      <span class="project-shelf-card__description">welcome to my post just getting started 
+</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="36770" href="/projects/36770">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MjA5NTEzLCJwdXIiOiJibG9iX2lkIn19--5f64e203778829218cf87c37bb4d210845bbc656/Goybot%20banner.PNG" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">Greatest Of the Year bot!</span>
+      <span class="project-shelf-card__description">G.O.Y. bot anwsers philosophical questions , helps you make decisons with coinflip, and it also teaches random facts ...</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--in-progress">In progress</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="4313" href="/projects/4313">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTQzNzQsInB1ciI6ImJsb2JfaWQifX0=--f4c73825225fe9255c9fe9234669742c61d40d80/wmremove-transformed.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">Silo IT Terminal</span>
+      <span class="project-shelf-card__description">&quot;We do not know why we are here. We do not know who built the Silo. We only know the Pact, and the terminal keeps the...</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="18550" href="/projects/18550">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTExMzYsInB1ciI6ImJsb2JfaWQifX0=--73133d0079e0aed96cf374295001a13ec964b7e3/a-vibrant-ice-cream-cone-features-scoops-of-pink-and-white-ice-cream-topped-with-a-cherry-and-surrounded-by-chocolate-drizzle-evoking-a-fun-sweet-treat-free-vector(1).png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">Slack Bot Icekeem</span>
+      <span class="project-shelf-card__description">A simple bot that takes care of my Channel! Alongwith being very nice it is tasty as well!</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="1500" href="/projects/1500">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTE2NTgsInB1ciI6ImJsb2JfaWQifX0=--8ab5586591f74af867ec597164fb7f220f3764e3/International_Pok%C3%A9mon_logo.svg.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">Pokemon Slack Bot</span>
+      <span class="project-shelf-card__description">run /pb-help for help on this bot! A slack bot made with a passion for pokemon. I created this bot for stardance.spac...</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="9658" href="/projects/9658">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NDk0MTIsInB1ciI6ImJsb2JfaWQifX0=--accdaea27471faadbdb3cfe42ad61eadfe95773d/main.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">My first slack bot!</span>
+      <span class="project-shelf-card__description">This bot isn't slacking off, it replies to messages 24/7!</span>
+  </span>
+</a>
+              </div>
+              <div class="mission-home__gallery-item" role="listitem">
+                  <span class="mission-home__gallery-badge mission-home__gallery-badge--approved">Completed</span>
+                <a class="project-shelf-card" data-controller="feed-engagement" data-feed-engagement-item-type-value="project" data-feed-engagement-project-id-value="7194" href="/projects/7194">
+  <span class="project-shelf-card__media ">
+      <img alt="" class="project-shelf-card__image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6ODY2MzIsInB1ciI6ImJsb2JfaWQifX0=--d103c0d4a02358b288121dd3b014d7c803f44002/ChatGPT%20Image%20Jun%2027,%202026,%2007_20_52%20PM.png" />
+  </span>
+
+  <span class="project-shelf-card__body">
+    <span class="project-shelf-card__title">Echo</span>
+      <span class="project-shelf-card__description">A Slack AI assistant that remembers team&#39;s knowledge, summarizes conversations, answers questions, and helps develope...</span>
+  </span>
+</a>
+              </div>
+              <turbo-frame id="gallery-page-2">
+                <div class="mission-home__gallery-show-more-wrapper">
+                  <a class="mission-home__gallery-show-more" href="/missions/slack-bot/gallery?page=2">Show more</a>
+                </div>
+</turbo-frame>          </div>
+        </section>
+    </article>
+  </div>
+
+
+  <aside class="discover-rail"
+       aria-label="Discover"
+       data-controller="discover-rail-search"
+       data-discover-rail-search-url-value="/search/global">
+  <div class="discover-rail__search">
+    <input type="search"
+           class="discover-rail__search-input"
+           placeholder="Search…"
+           aria-label="Search"
+           autocomplete="off"
+           data-discover-rail-search-target="input"
+           data-action="input->discover-rail-search#search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" color="white" class="discover-rail__search-icon">
+<g clip-path="url(#clip0_1820_4483)">
+<path d="M39.0527 34.2126L29.8565 25.0156C31.419 22.5281 32.3258 19.5879 32.3258 16.4326C32.3258 7.50574 25.0891 0.27002 16.1626 0.27002C7.23605 0.27002 0 7.50574 0 16.4326C0 25.3598 7.23571 32.5948 16.1626 32.5948C19.5964 32.5948 22.777 31.5213 25.3942 29.6971L34.481 38.7846C35.1124 39.4154 35.9402 39.7295 36.7669 39.7295C37.5946 39.7295 38.4213 39.4154 39.0537 38.7846C40.3155 37.5215 40.3155 35.4754 39.0527 34.2126ZM16.1626 27.3584C10.1291 27.3584 5.23745 22.4671 5.23745 16.4333C5.23745 10.3994 10.1291 5.50781 16.1626 5.50781C22.1964 5.50781 27.0877 10.3994 27.0877 16.4333C27.0877 22.4671 22.1964 27.3584 16.1626 27.3584Z" fill="currentColor"></path>
+</g>
+<defs>
+<clipPath id="clip0_1820_4483">
+<rect width="40" height="40" fill="white"></rect>
+</clipPath>
+</defs>
+</svg>
+    <button type="button"
+            class="discover-rail__search-clear"
+            aria-label="Clear search"
+            data-discover-rail-search-target="clearButton"
+            data-action="discover-rail-search#clear"
+            hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" id="Capa_1" enable-background="new 0 0 320.591 320.591" height="512" viewBox="0 0 320.591 320.591" width="512" fill="currentColor" class="discover-rail__search-clear-icon"><g><g id="close_1_"><path d="m30.391 318.583c-7.86.457-15.59-2.156-21.56-7.288-11.774-11.844-11.774-30.973 0-42.817l257.812-257.813c12.246-11.459 31.462-10.822 42.921 1.424 10.362 11.074 10.966 28.095 1.414 39.875l-259.331 259.331c-5.893 5.058-13.499 7.666-21.256 7.288z"></path><path d="m287.9 318.583c-7.966-.034-15.601-3.196-21.257-8.806l-257.813-257.814c-10.908-12.738-9.425-31.908 3.313-42.817 11.369-9.736 28.136-9.736 39.504 0l259.331 257.813c12.243 11.462 12.876 30.679 1.414 42.922-.456.487-.927.958-1.414 1.414-6.35 5.522-14.707 8.161-23.078 7.288z"></path></g></g></svg>
+    </button>
+  </div>
+
+  <turbo-frame id="discover-rail-results" data-discover-rail-search-target="results" hidden></turbo-frame>
+
+  <div class="discover-rail__widgets" data-discover-rail-search-target="widgets">
+        
+  </div>
+</aside>
+
+</div>
+
+    
+    
+    <dialog class="post-panel" aria-label="Post"
+        data-controller="post-panel"
+        data-post-panel-target="dialog"
+        data-action="card-link:navigate@window->post-panel#open pointerdown->post-panel#trackPress click->post-panel#backdropClick">
+  <div class="post-panel__content">
+    <header class="post-panel__header">
+      <button type="button" class="post-panel__close" data-action="post-panel#close" aria-label="Close">&times;</button>
+    </header>
+    <div class="post-panel__body">
+      <div class="devlog-detail__post" data-post-panel-target="cardSlot"></div>
+      <turbo-frame data-post-panel-target="frame" data-action="turbo:before-frame-render-&gt;post-panel#clearPlaceholder turbo:frame-load-&gt;post-panel#frameLoaded turbo:submit-end-&gt;post-panel#frameSubmitted" id="post-panel-comments" target="_top">
+        <div class="post-panel__loading">
+          <span class="feed-loading__spinner" aria-hidden="true"></span>
+        </div>
+</turbo-frame>    </div>
+  </div>
+</dialog>
+
+    
+      <footer class="dev-footer">
+        <p>
+          Build <a href="https://github.com/hackclub/stardance/commit/28bd856a8cdf1ee6f84a83b52e734182d1a2bc8c">28bd856a</a>
+          from about 3 hours ago.
+          (DB: 22 queries, 1 cached)
+          (CACHE: 12 hits, 0 misses)
+          (2.4 req/sec)
+          (Active: 75 signed in, 232 visitors)
+        </p>
+      </footer>
+  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"bff4c063e5be4ac1a18a3a5875ca9941"}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a269b1c5afa7eca1',t:'MTc4NTk3MzcyNQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

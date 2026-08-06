@@ -1,0 +1,1773 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Snap - Stardance</title>
+    <link rel="icon" type="image/png" href="https://stardance.hackclub.com/assets/favicon-cdc48065.png" />
+    <link rel="apple-touch-icon" type="image/png" href="https://stardance.hackclub.com/apple-touch-icon.png" sizes="180x180" />
+    <meta name="apple-mobile-web-app-title" content="Stardance">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta property="og:type" content="website">
+    <meta name="twitter:site" content="@hackclub">
+    <meta name="twitter:creator" content="@hackclub">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="Stardance - Hack Club">
+    <meta name="theme-color" content="#FFE564">
+
+
+    <meta name="description" content="The desktop AI assistant that lives in your keyboard, not your browser.
+
+Snap is a native desktop utility that eliminates the copy-paste-switch cycle. Using system-wide global shortcuts, it lets ...">
+    <meta property="og:title" content="Snap by @firancly | Stardance">
+    <meta property="og:description" content="The desktop AI assistant that lives in your keyboard, not your browser.
+
+Snap is a native desktop utility that eliminates the copy-paste-switch cycle. Using system-wide global shortcuts, it lets ...">
+    <meta property="og:url" content="https://stardance.hackclub.com/projects/26067">
+    <meta property="og:image" content="https://stardance.hackclub.com/projects/26067/og_image">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Snap by @firancly | Stardance">
+    <meta name="twitter:description" content="The desktop AI assistant that lives in your keyboard, not your browser.
+
+Snap is a native desktop utility that eliminates the copy-paste-switch cycle. Using system-wide global shortcuts, it lets ...">
+    <meta name="twitter:image" content="https://stardance.hackclub.com/projects/26067/og_image">
+    <meta name="author" content="firancly">
+
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="vWn28ofg8BgO4tJhDsxouK0XSfTuEcAQ6d5SLTjsF-6vnPPb3fsBetOb8J2A2mIa6u-6cIPK2Bzu8yF9uvCchA" />
+    
+    <meta name="turbo-prefetch" content="false">
+    <meta name="active-nav-slug" content="home">
+
+    
+    <link rel="preload" href="https://stardance.hackclub.com/assets/Roboto-804fdbde.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+
+    
+      <script>
+    window['_fs_host'] = 'fullstory.com';
+    window['_fs_script'] = 'edge.fullstory.com/s/fs.js';
+    window['_fs_org'] = 'ARN0J';
+    window['_fs_namespace'] = 'FS';
+    (function(m,n,e,t,l,o,g,y){
+      if (e in m) { if (m.console && m.console.log) { m.console.log('FullStory namespace conflict. Please set window["_fs_namespace"].'); } return; }
+      g=m[e]=function(a,b,s){g.q?g.q.push([a,b,s]):g._api(a,b,s);};g.q=[];
+      o=n.createElement(t);o.async=1;o.crossOrigin='anonymous';o.src='https://'+_fs_script;
+      y=n.getElementsByTagName(t)[0];y.parentNode.insertBefore(o,y);
+      g.identify=function(i,v,s){g(l,{uid:i},s);if(v)g(l,v,s)};
+      g.setUserVars=function(v,s){g(l,v,s)};
+      g.event=function(i,v,s){g('event',{n:i,p:v},s)};
+      g.anonymize=function(){g.identify(!!0)};
+      g.shutdown=function(){g("rec",!1)};
+      g.restart=function(){g("rec",!0)};
+      g.log=function(a,b){g("log",[a,b])};
+      g.consent=function(a){g("consent",!arguments.length||a)};
+      g.identifyAccount=function(i,v){o='account';v=v||{};v.acctId=i;g(o,v)};
+      g.clearUserCookie=function(){};
+      g.setVars=function(n,p){g('setVars',[n,p]);};
+      g._hierarchyRecordingEnabled=true;
+      g._hierarchyDefaultRegion='main';
+    })(window,document,window['_fs_namespace'],'script','user');
+  </script>
+
+
+    
+    <link rel="stylesheet" href="https://stardance.hackclub.com/assets/application-d00ae1e7.css" data-turbo-track="reload" />
+      <script async src="https://plausible.io/js/pa-8UNXJ41xxW9knU4pKr95g.js"></script>
+      <script>
+        window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+        plausible.init()
+      </script>
+      <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18182651878"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-18182651878');
+      </script>
+    <script src="https://stardance.hackclub.com/assets/application-7b8e6541.js" data-turbo-track="reload" type="module"></script>
+    <meta name="sentry-trace" content="1807facf080f4487b8bdf11683bbe6c8-a5725f129948467a-1">
+<meta name="baggage" content="sentry-trace_id=1807facf080f4487b8bdf11683bbe6c8,sentry-sample_rate=1.0,sentry-sample_rand=0.166329,sentry-sampled=true,sentry-environment=production,sentry-public_key=128c1f8988d2f77be887915507fa1e06,sentry-org_id=40609"> 
+  <script data-cfasync="false" nonce="9b694247-a3d4-4044-aa3b-ec4f6b35acbf">try{(function(w,d){!function(mJ,mK,mL,mM){if(mJ.zaraz)console.error("zaraz is loaded twice");else{mJ[mL]=mJ[mL]||{};mJ[mL].executed=[];mJ.zaraz={deferred:[],listeners:[]};mJ.zaraz._v="20";mJ.zaraz._n="9b694247-a3d4-4044-aa3b-ec4f6b35acbf";mJ.zaraz.q=[];mJ.zaraz._f=function(mN){return async function(){var mO=Array.prototype.slice.call(arguments);mJ.zaraz.q.push({m:mN,a:mO})}};for(const mP of["track","set","debug"])mJ.zaraz[mP]=mJ.zaraz._f(mP);mJ.zaraz.init=()=>{var mQ=mK.getElementsByTagName(mM)[0],mR=mK.createElement(mM),mS=mK.getElementsByTagName("title")[0];mS&&(mJ[mL].t=mK.getElementsByTagName("title")[0].text);mJ[mL].x=Math.random();mJ[mL].w=mJ.screen.width;mJ[mL].h=mJ.screen.height;mJ[mL].j=mJ.innerHeight;mJ[mL].e=mJ.innerWidth;mJ[mL].l=mJ.location.href;mJ[mL].r=mK.referrer;mJ[mL].k=mJ.screen.colorDepth;mJ[mL].n=mK.characterSet;mJ[mL].o=(new Date).getTimezoneOffset();if(mJ.dataLayer)for(const mT of Object.entries(Object.entries(dataLayer).reduce((mU,mV)=>({...mU[1],...mV[1]}),{})))zaraz.set(mT[0],mT[1],{scope:"page"});mJ[mL].q=[];for(;mJ.zaraz.q.length;){const mW=mJ.zaraz.q.shift();mJ[mL].q.push(mW)}mR.defer=!0;for(const mX of[localStorage,sessionStorage])Object.keys(mX||{}).filter(mZ=>mZ.startsWith("_zaraz_")).forEach(mY=>{try{mJ[mL]["z_"+mY.slice(7)]=JSON.parse(mX.getItem(mY))}catch{mJ[mL]["z_"+mY.slice(7)]=mX.getItem(mY)}});mR.referrerPolicy="origin";mR.src="/cdn-cgi/zaraz/s.js?z="+btoa(encodeURIComponent(JSON.stringify(mJ[mL])));mQ.parentNode.insertBefore(mR,mQ)};["complete","interactive"].includes(mK.readyState)?zaraz.init():mJ.addEventListener("DOMContentLoaded",zaraz.init)}}(w,d,"zarazData","script");window.zaraz._p=async nv=>new Promise(nw=>{if(nv){nv.e&&nv.e.forEach(nx=>{try{const ny=d.querySelector("script[nonce]"),nz=ny?.nonce||ny?.getAttribute("nonce"),nA=d.createElement("script");nz&&(nA.nonce=nz);nA.innerHTML=nx;nA.onload=()=>{d.head.removeChild(nA)};d.head.appendChild(nA)}catch(nB){console.error(`Error executing script: ${nx}\n`,nB)}});Promise.allSettled((nv.f||[]).map(nC=>fetch(nC[0],nC[1])))}nw()});zaraz._p({"e":["(function(w,d){})(window,document)"]});})(window,document)}catch(e){throw fetch("/cdn-cgi/zaraz/t"),e;};</script></head>
+
+  <body class="signed-in app-layout-page ">
+      <div class="app-loading" aria-hidden="true">
+        <div class="app-loading__inner">
+          <img alt="" class="app-loading__logo" src="https://stardance.hackclub.com/assets/landing/header/stardance-logo-df399a7f.png" />
+          <span class="app-loading__spinner"></span>
+        </div>
+      </div>
+    <div class="top-banners">
+    </div>
+      <aside class="sidebar"
+       id="primary-nav"
+       data-controller="sidebar-active nav-history"
+       data-turbo-permanent
+       aria-label="Main">
+  <a class="sidebar__logo" aria-label="Stardance home" data-turbo="true" href="/">
+    <img alt="Hack Club Stardance Challenge" class="sidebar__logo-img" src="https://stardance.hackclub.com/assets/landing/header/stardance-logo-df399a7f.png" />
+</a>
+  <nav class="sidebar__nav" aria-label="Primary navigation">
+    <ul class="sidebar__nav-list">
+
+        <li class="sidebar__nav-item" data-onboarding-target="home">
+
+
+            <a class="sidebar__nav-link sidebar__nav-link--active" aria-current="page" data-turbo="true" data-slug="home" href="/home">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/rocket-ae0562a3.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/rocket_active-fe1cbdba.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">home</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="rate">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="rate" href="/rate/new">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/box-78dc97de.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/box_active-09267c74.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">rate</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="missions">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="missions" href="/missions">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/calendar-0946a93c.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/calendar_active-f0f440ea.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">missions</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="shop">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="shop" href="/shop">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/cart-e343ed9d.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/cart_active-5d9284ca.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">shop</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="resources">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="resources" href="/resources">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/book-cf3c9ead.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/book_active-38491ddd.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">resources</span>
+
+</a>        </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar__user" aria-live="polite">
+      <div class="sidebar__guest-cta">
+        <a class="sidebar__guest-cta-btn" href="/">Sign up</a>
+      </div>
+  </div>
+
+</aside>
+
+    <div id="flash-region">
+</div>
+    <div class="guest-banner" role="status">
+    <p class="guest-banner__copy">
+      You are browsing as a guest.
+      <a class="guest-banner__link" href="/">Sign up</a>
+      (or <a class="guest-banner__link" href="/">log in</a>) to start making projects!
+    </p>
+</div>
+
+
+
+<div class="app-layout" data-controller="profile-modal">
+  <div class="app-layout__main">
+    
+    <turbo-frame id="project_hero">
+
+      <article class="project-show">
+        <header class="project-show__hero">
+          <div class="project-show__banner ">
+            <img alt="" class="project-show__banner-image" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTcxNDYyLCJwdXIiOiJibG9iX2lkIn19--c2c9ea2aea0a99ef3e278bf372edaf3b369745f0/snap-banner-h.png" />
+            <a class="project-show__back" aria-label="Back" data-turbo-frame="_top" href="/home">
+              <svg class="project-show__back-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 6l-6 6 6 6" />
+              </svg>
+</a>          </div>
+
+          <div class="project-show__panel project-show__panel--read">
+            <div class="project-show__summary">
+              <div class="project-show__identity">
+                <div class="project-show__title-row">
+                  <h1 class="project-show__title">Snap</h1>
+                                  </div>
+                <div class="project-show__byline">
+                    <ul class="project-show__avatars" aria-hidden="true">
+                        <li class="project-show__avatars-item">
+                            <img alt="firancly" class="project-show__avatar" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+                        </li>
+                    </ul>
+                  <p class="project-show__authors">
+                    By
+                      <a class="project-show__author" data-turbo-frame="_top" data-turbo-prefetch="true" href="/@firancly">@firancly</a>
+
+                  </p>
+                </div>
+              </div>
+
+              <ul class="project-show__stats" aria-label="Project stats">
+                <li class="project-show__stats-item">
+                  <strong class="project-show__stats-num">9</strong>
+                  <span class="project-show__stats-label">Devlogs</span>
+                </li>
+                <li class="project-show__stats-item">
+                  <strong class="project-show__stats-num">17</strong>
+                  <span class="project-show__stats-label">Total hours</span>
+                </li>
+              </ul>
+            </div>
+
+              <p class="project-show__description">The desktop AI assistant that lives in your keyboard, not your browser.
+
+Snap is a native desktop utility that eliminates the copy-paste-switch cycle. Using system-wide global shortcuts, it lets you manipulate text in any application - browser, IDE, email client - without breaking your flow.</p>
+
+            <div class="project-show__read-footer">
+              <button name="button" type="button" class="project-show__followers" data-action="click-&gt;profile-modal#open" data-profile-modal-url-param="/projects/26067/followers" data-profile-modal-title-param="Followers">
+                <strong>5</strong> followers
+</button>              <div class="project-show__panel-actions">
+                
+
+                  <a class="project-show__pill project-show__pill--outline project-show__pill--github" target="_blank" rel="noopener noreferrer" aria-label="View source on GitHub" href="https://github.com/firancly/tldr-app">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 98 96" class="project-show__github-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z" fill="currentColor"></path></svg>
+                    Source
+</a>
+
+
+                
+              </div>
+            </div>
+          </div>
+        </header>
+      </article>
+</turbo-frame>
+
+
+
+
+      <section class="project-show__feed" aria-label="Project feed">
+            
+  <article id="post_20762" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="20762" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/17513" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="20762">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/17513">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-07-02T13:40:56Z" title="July 02, 2026 13:40">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">2h 4m 41s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <p>Spent about 4.5 hours this session building out the main window into a proper settings page so you can set Snap up however you want without ever touching the code. Heres everything that landed.</p>
+<hr>
+<p><strong>Custom hotkeys</strong> — you can now reassign the shortcuts to whatever keys you want instead of being stuck with F9/F10/F11.The tricky part wasnt setting them, it was getting them to stay after closing the app. They kept resetting every restart. Found tauri plugin store which turned out to be exactly what I needed now the hotkeys save properly between sessions.</p>
+<p><strong>Custom API key field</strong> — drop in your own Groq key right in the settings instead of it living in a file, so you’re not tied to the shared tester key.</p>
+<p><strong>Customizable summary length</strong> — pick how short or detailed you want your summaries to be.</p>
+<p><strong>Window controls</strong> — added proper minimize, expand and close buttons to the window and got them all wired up. Also added drag to settings window.</p>
+<p><strong>Auto start on launch</strong> — Snap now starts itself when you boot up so its just always ready in the background.</p>
+<p><strong>Scroll fixes</strong> — sorted out the scrolling on the settings page. This one annoyed me, I was trying to style the webkit scrollbar to match the rest of the UI and it just would not budge no matter what I threw at it. Eventually I gave up fighting it and settled for the default scrollbar, sometimes its not worth burning more time on something that small.</p>
+<hr>
+<p>That was the session, about 4.5 hours all up. Snap went from set in stone shortcuts to something you can actually configure and make your own, which makes it a real step toward it being a finished product.</p>
+<p><strong>Next up</strong>: make auto updates seamless so you never re download.</p>
+<p>Discrepancy in the hours because Wakatime wasn’t connected (offline)</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTA3NTQ5LCJwdXIiOiJibG9iX2lkIn19--918e608946f5e0fa7e46618825b43e8bfa5fec4f/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/image.png" />
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="0 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/17513#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_17513">0</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>1</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_17513" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">6</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 144 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>144</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/17513" data-post-menu-post-id-value="20762" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_19927" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="19927" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/16809" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="19927">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/16809">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-07-01T11:26:21Z" title="July 01, 2026 11:26">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">22m 54s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <p>Wednesday?</p>
+<ul>
+<li>Added draggable windows</li>
+<li>Improve ai prompts</li>
+</ul>
+<p>More to come. Currently busy with life. Touching graass 🌳🌳🌳</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MTAyMTE2LCJwdXIiOiJibG9iX2lkIn19--d83432420673970d3b3169b038d914a6ab6dc0f6/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/image.png" />
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="0 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/16809#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_16809">0</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_16809" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">3</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 137 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>137</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/16809" data-post-menu-post-id-value="19927" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_19134" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="19134" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/16148" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="19134">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/16148">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-30T11:43:39Z" title="June 30, 2026 11:43">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">1h 6m 38s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <h1>Snap is live, and the first batch of testers gets in free ⚡<a href="#snap-is-live-and-the-first-batch-of-testers-gets-in-free-" class="anchor"></a>
+</h1>
+<p>Select any text on your screen, hit a hotkey, and AI handles it — summarize, rewrite, or ask anything — in a popup right at your cursor. No browser tab, no copy-paste, no setup.</p>
+<p>I’m opening a <strong>limited number of free tester spots</strong>: download it, no API key needed, just run it and go. First come first served while the spots last.</p>
+<p>Built solo in a weekend. First time ever writing Rust — the devlogs cover the whole messy journey, including the day I lost to an invisible black box rendering over my entire window.</p>
+<h3>👀👀Watch the demo down below<a href="#watch-the-demo-down-below" class="anchor"></a>
+</h3>
+<p>👉 Grab it: <a href="https://github.com/firancly/tldr-app/releases/latest" target="_blank" rel="noopener noreferrer">[download link]</a></p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+         data-controller="media-carousel"
+         data-media-carousel-dot-active-class="feed-post-card__media-dot--active"
+         data-media-carousel-arrow-hidden-class="feed-post-card__media-arrow--hidden"
+       >
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport"  data-media-carousel-target="viewport">
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTcyOTksInB1ciI6ImJsb2JfaWQifX0=--ee2b95c16c3dd9f23497e40595593afbb09fb8c2/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/banner.png" />
+
+          </figure>
+          <figure class="feed-post-card__media-slide ">
+              <video controls="controls" preload="none" poster="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTczMDAsInB1ciI6ImJsb2JfaWQifX0=--e2a415686f665fa6e83db0cf0f6faa450468f8a7/eyJfcmFpbHMiOnsiZGF0YSI6eyJyZXNpemVfdG9fbGltaXQiOls0MDAsMjI1XSwiZm9ybWF0Ijoid2VicCJ9LCJwdXIiOiJ2YXJpYXRpb24ifX0=--121c85938727b52d2972e6f9e674dd03b6ab12ad/Screen%20Recording%202026-06-30%20125610.mp4" class="feed-post-card__video" src="https://stardance.hackclub.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6OTczMDAsInB1ciI6ImJsb2JfaWQifX0=--e2a415686f665fa6e83db0cf0f6faa450468f8a7/Screen%20Recording%202026-06-30%20125610.mp4"></video>
+
+          </figure>
+      </div>
+        <button type="button"
+                class="feed-post-card__media-arrow feed-post-card__media-arrow--prev feed-post-card__media-arrow--hidden"
+                data-media-carousel-target="prevArrow"
+                data-action="media-carousel#prev"
+                aria-label="Previous image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <button type="button"
+                class="feed-post-card__media-arrow feed-post-card__media-arrow--next"
+                data-media-carousel-target="nextArrow"
+                data-action="media-carousel#next"
+                aria-label="Next image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
+    </div>
+      <div class="feed-post-card__media-dots">
+          <button type="button"
+                  class="feed-post-card__media-dot feed-post-card__media-dot--active"
+                  data-media-carousel-target="dot"
+                  data-action="media-carousel#goTo"
+                  data-index="0"
+                  aria-label="Image 1"></button>
+          <button type="button"
+                  class="feed-post-card__media-dot "
+                  data-media-carousel-target="dot"
+                  data-action="media-carousel#goTo"
+                  data-index="1"
+                  aria-label="Image 2"></button>
+      </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="0 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/16148#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_16148">0</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_16148" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">8</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 197 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>197</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/16148" data-post-menu-post-id-value="19134" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+<article class="feed-post-card project-show__latest-ship" data-controller="feed-engagement" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="18996" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::ShipEvent">
+  <div class="feed-post-card__reposted-by project-show__latest-ship-label">
+    <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="bolt" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="project-show__latest-ship-icon"><path fill-rule="evenodd" clip-rule="evenodd" d="M16.73 4.527a1 1 0 0 1 .77.973v8h4a1 1 0 0 1 .894 1.447l-6 12A1 1 0 0 1 14.5 26.5v-8h-4a1 1 0 0 1-.894-1.447l6-12a1 1 0 0 1 1.124-.526zM12.118 16.5H15.5a1 1 0 0 1 1 1v4.764l3.382-6.764H16.5a1 1 0 0 1-1-1V9.736L12.118 16.5zM26.852 21.726c-.26.408-.444.76-.553 1.09a2.21 2.21 0 0 0-.11.51 1.839 1.839 0 0 0 0 .348c.015.167.052.336.11.513.11.328.293.68.553 1.087.03.046.058.092.09.138.214.327-.202.744-.527.53a15.526 15.526 0 0 0-.138-.09c-.407-.262-.758-.447-1.085-.556a2.205 2.205 0 0 0-.509-.11 1.818 1.818 0 0 0-.346 0 2.205 2.205 0 0 0-.509.11c-.327.11-.678.294-1.085.555a7.978 7.978 0 0 0-.137.09c-.326.215-.74-.202-.526-.529l.09-.138c.255-.403.438-.75.546-1.076.058-.174.095-.34.11-.506a1.956 1.956 0 0 0 0-.367 2.253 2.253 0 0 0-.116-.506c-.11-.323-.297-.669-.558-1.07l-.09-.136c-.219-.325.191-.747.52-.535.046.03.092.06.138.088.415.26.771.443 1.103.55.177.057.347.092.516.105.11.01.217.01.326 0a2.23 2.23 0 0 0 .515-.11c.331-.11.686-.298 1.097-.562l.138-.09c.325-.215.741.202.526.53l-.052.078-.037.06zM9.852 6.726c-.26.408-.444.76-.553 1.09a2.21 2.21 0 0 0-.11.51 1.839 1.839 0 0 0 0 .348c.015.167.052.336.11.513.11.328.293.68.553 1.087.03.046.058.092.09.138.214.327-.202.744-.527.53a15.526 15.526 0 0 0-.138-.09c-.407-.262-.758-.447-1.085-.556a2.205 2.205 0 0 0-.509-.11 1.818 1.818 0 0 0-.346 0 2.205 2.205 0 0 0-.509.11c-.327.11-.678.294-1.085.555a7.978 7.978 0 0 0-.137.09c-.326.215-.74-.202-.526-.529l.09-.138c.255-.403.438-.75.546-1.076.058-.174.095-.34.11-.506a1.956 1.956 0 0 0 0-.367 2.253 2.253 0 0 0-.116-.506c-.11-.323-.297-.669-.558-1.07l-.09-.136c-.219-.325.191-.747.52-.535.046.03.092.06.138.088.415.26.771.443 1.103.55.177.057.347.092.516.105.11.01.217.01.326 0a2.23 2.23 0 0 0 .515-.11c.331-.11.686-.298 1.097-.562l.138-.09c.325-.215.741.202.526.53l-.052.078-.037.06z"></path></svg>
+    <span>Ship #1</span>
+  </div>
+
+  <header class="feed-post-card__header">
+      <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+        <img alt="" class="feed-post-card__avatar" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" data-turbo-frame="_top" data-turbo-prefetch="true" href="/@firancly">@firancly</a>
+
+        <span class="feed-post-card__context">on</span>
+        <a class="feed-post-card__project" data-turbo-frame="_top" href="/projects/26067">Snap</a>
+        <time class="feed-post-card__time" datetime="2026-06-30T04:59:05Z" title="June 30, 2026 04:59">
+          · about 1 month ago
+        </time>
+      </p>
+
+        <div class="feed-post-card__body feed-post-card__body--inline project-show__latest-ship-text">
+          <h1>Snap is live<a href="#snap-is-live" class="anchor"></a>
+</h1>
+<p>Select text anywhere on Windows, hit a hotkey, and get an AI result in a glass popup right next to your cursor. No copy pasting into a browser tab, no breaking your flow.</p>
+<p>This is the first real release. You can download it, run it, and it just works.</p>
+<h2>What it does<a href="#what-it-does" class="anchor"></a>
+</h2>
+<p><strong>Summarize</strong> — highlight a wall of text, press F9, get back a few skimmable bullet points instead of the whole thing.</p>
+<p><strong>Enhance</strong> — highlight a rough draft, press F10, and it cleans up the tone and grammar while keeping your meaning. Great for firing off an email you didnt want to overthink.</p>
+<p><strong>Ask anything</strong> — dont want a preset? Select text, open the popup and just type your own instruction at it. Translate this, explain this, make it shorter, whatever you want. The two hotkeys are the fast path, this is the everything else.</p>
+<h2>The nice touches<a href="#the-nice-touches" class="anchor"></a>
+</h2>
+<p><strong>Real glass popup</strong> — it appears right at your cursor with proper native acrylic blur, not a fake CSS imitation. It animates as the response streams in.</p>
+<p><strong>Lives in the tray</strong> — close the window and it just keeps running in the background listening for your hotkeys. Launches on startup so its always there.</p>
+<p><strong>Esc to dismiss, one click to copy</strong> — get the result back to your clipboard instantly, or hit esc and its gone.</p>
+<p><strong>Auto updates</strong> — it pulls new versions itself so you never have to come back and re download anything.</p>
+<h2>Under the hood<a href="#under-the-hood" class="anchor"></a>
+</h2>
+<p>Your Groq API key lives entirely on the Rust side so it never touches the frontend bundle. The whole thing is a native desktop app, not a browser extension, so theres no chromium bloat and it works system wide across every app.</p>
+<h2>The honest part<a href="#the-honest-part" class="anchor"></a>
+</h2>
+<p>This was my first time ever writing Rust. Most of this build was me learning Tauri and Rust from absolute zero, which the devlogs cover in detail. The day I lost to an invisible black box rendering over my entire window is a personal favorite. Worth a read if you like watching someone figure things out the hard way.</p>
+<h2>Get it<a href="#get-it" class="anchor"></a>
+</h2>
+<p>Download the installer from the releases page, run it, done. It bundles the WebView2 check so it works even on a fresh machine.</p>
+<p>Feedback very welcome, especially on how the popup feels to actually use.</p>
+
+        </div>
+    </div>
+  </header>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTY1MjUsInB1ciI6ImJsb2JfaWQifX0=--34bedc81ba22d7fbfbe831e463ee5dfbf3893dad/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/Screenshot%202026-06-30%20111253.png" />
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+  <ul class="feed-post-card__body project-show__latest-ship-stats" aria-label="Ship totals">
+    <li class="profile-project-card__meta-item">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="profile-project-card__meta-icon">
+  <rect x="4" y="3" width="16" height="18" rx="2.5" fill="currentColor"></rect>
+  <g fill="#1a1d2e">
+    <rect x="7" y="7.5" width="10" height="1.5" rx="0.75"></rect>
+    <rect x="7" y="11.5" width="10" height="1.5" rx="0.75"></rect>
+    <rect x="7" y="15.5" width="6" height="1.5" rx="0.75"></rect>
+  </g>
+</svg>
+      <span>6 devlogs</span>
+    </li>
+    <li class="profile-project-card__meta-item profile-project-card__meta-item--time">
+      <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 347.442 347.442" class="profile-project-card__meta-icon profile-project-card__meta-icon--time"><path d="M173.721 347.442c95.919 0 173.721-77.802 173.721-173.721S269.64 0 173.721 0 0 77.802 0 173.721s77.802 173.721 173.721 173.721m-12.409-272.99c0-6.825 5.584-12.409 12.409-12.409s12.409 5.584 12.409 12.409v93.313l57.39 45.912c5.336 4.281 6.204 12.098 1.923 17.434a12.34 12.34 0 0 1-9.679 4.653c-2.73 0-5.46-.869-7.755-2.73L165.966 183.4c-2.916-2.358-4.653-5.894-4.653-9.679z" fill="currentColor"></path></svg>
+      <span>13h</span>
+    </li>
+      <li class="profile-project-card__meta-item profile-project-card__meta-item--multiplier" title="Quality multiplier">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="profile-project-card__meta-icon"><g fill="none"><path d="M24 0v24H0V0zM12.593 23.258l-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path><path fill="currentColor" d="M10.92 2.868a1.25 1.25 0 0 1 2.16 0l2.795 4.798 5.428 1.176a1.25 1.25 0 0 1 .667 2.054l-3.7 4.141.56 5.525a1.25 1.25 0 0 1-1.748 1.27L12 19.592l-5.082 2.24a1.25 1.25 0 0 1-1.748-1.27l.56-5.525-3.7-4.14a1.25 1.25 0 0 1 .667-2.055l5.428-1.176z"></path></g></svg>
+        <span>10.53x multiplier</span>
+      </li>
+      <li class="profile-project-card__meta-item profile-project-card__meta-item--payout" title="Stardust payout">
+        <span>138 Stardust</span>
+      </li>
+      <li class="profile-project-card__meta-item profile-project-card__meta-item--mission">
+        <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25" fill="none" class="profile-project-card__meta-icon profile-project-card__meta-icon--mission">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M3.125 2.34375C3.3322 2.34375 3.53091 2.42606 3.67743 2.57257C3.82394 2.71909 3.90625 2.9178 3.90625 3.125V3.6875L5.82083 3.20833C8.17281 2.62027 10.6576 2.89295 12.826 3.97708L12.9385 4.03333C14.7366 4.9325 16.793 5.17283 18.75 4.7125L21.9896 3.95C22.1111 3.9215 22.2376 3.92253 22.3587 3.95299C22.4797 3.98345 22.5917 4.04246 22.6852 4.12508C22.7787 4.2077 22.8511 4.31152 22.8963 4.42786C22.9414 4.5442 22.9581 4.66966 22.9448 4.79375C22.5572 8.37261 22.5589 11.983 22.95 15.5615C22.9708 15.7511 22.9215 15.9419 22.8114 16.0977C22.7012 16.2535 22.5379 16.3637 22.3521 16.4073L19.1083 17.1708C16.7954 17.7152 14.3648 17.4314 12.2396 16.3687L12.1271 16.3125C10.2924 15.3951 8.19008 15.1641 6.2 15.6615L3.90625 16.2344V21.875C3.90625 22.0822 3.82394 22.2809 3.67743 22.4274C3.53091 22.5739 3.3322 22.6562 3.125 22.6562C2.9178 22.6562 2.71909 22.5739 2.57257 22.4274C2.42606 22.2809 2.34375 22.0822 2.34375 21.875V3.125C2.34375 3.0224 2.36396 2.92081 2.40322 2.82603C2.44248 2.73124 2.50003 2.64512 2.57257 2.57257C2.64512 2.50003 2.73124 2.44248 2.82603 2.40322C2.92081 2.36396 3.0224 2.34375 3.125 2.34375Z" fill="currentColor"></path>
+</svg>
+        <span>
+          <a class="project-show__latest-ship-mission-link" data-turbo-frame="_top" href="/missions/frictionless">Frictionless</a>
+        </span>
+      </li>
+  </ul>
+
+    <div class="feed-post-card__body project-show__latest-ship-cta">
+        <a target="_blank" rel="noopener" class="project-show__latest-ship-btn project-show__latest-ship-btn--primary" href="https://github.com/firancly/tldr-app/releases/latest">Try project →</a>
+        <a target="_blank" rel="noopener" class="project-show__latest-ship-btn" href="https://github.com/firancly/tldr-app">See source code →</a>
+    </div>
+</article>
+
+            
+  <article id="post_18991" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="18991" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/16028" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="18991">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/16028">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-30T04:56:57Z" title="June 30, 2026 04:56">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">2h 39m 49s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <h1>Devlog #6 Snap grew up this session<a href="#devlog-6-snap-grew-up-this-session" class="anchor"></a>
+</h1>
+<p>Big one. A bunch of stuff landed that took this from “cool demo” to “actually a product.” Heres what will ship.</p>
+<h2>The headline: ask anything<a href="#the-headline-ask-anything" class="anchor"></a>
+</h2>
+<p>Until now Snap had two fixed actions, summarize and enhance. Now you can select text, open the popup and just type your own instruction at it. Translate this, explain this, make it shorter, rewrite it angrier, whatever. The two hotkeys stay as the fast path, this is for everything else. This was the idea I was most hyped about and its finally real.</p>
+<h2>It updates itself now<a href="#it-updates-itself-now" class="anchor"></a>
+</h2>
+<p>Before this, a new version meant everyone had to go re download the installer, which means nobody would. Now the app checks for updates and pulls them in on its own. Getting this working felt like the moment it stopped being a hobby project.</p>
+<h2>Quality of life<a href="#quality-of-life" class="anchor"></a>
+</h2>
+<p><strong>Launch on startup</strong> so its just always there listening, no opening it every morning.<br>
+<strong>Esc to close</strong> the popup instead of clicking away.<br>
+<strong>Custom icons</strong> finally rendering properly everywhere after fighting them for a bit.<br>
+<strong>Seamless popup</strong> cleanup so it actually feels polished now.<br>
+<strong>Tester API key</strong> baked in so people can try it without making a Groq account first.<br>
+<strong>Improved the prompts</strong> so it doesn’t sound ai generated and can pass as human text</p>
+<h2>Still cooking<a href="#still-cooking" class="anchor"></a>
+</h2>
+<p>Custom hotkeys and screen edge aware positioning so the popup never opens half off your monitor. Potential language spin off to aid language learners (custom in app language, ai response langauge). Those are next, then this thing is ready to really show off.</p>
+<hr>
+<p>Honestly this was the most satisfying session so far. Not because anything was hard, but because every single thing I added made it feel more like a real app and less like something held together with tape.</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <video controls="controls" preload="none" poster="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTY1MDksInB1ciI6ImJsb2JfaWQifX0=--d98bea4e180973cd1a8c6e654c0e8e9a70a6fd40/eyJfcmFpbHMiOnsiZGF0YSI6eyJyZXNpemVfdG9fbGltaXQiOls0MDAsMjI1XSwiZm9ybWF0Ijoid2VicCJ9LCJwdXIiOiJ2YXJpYXRpb24ifX0=--121c85938727b52d2972e6f9e674dd03b6ab12ad/Screen%20Recording%202026-06-30%20125610.mp4" class="feed-post-card__video" src="https://stardance.hackclub.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6OTY1MDksInB1ciI6ImJsb2JfaWQifX0=--d98bea4e180973cd1a8c6e654c0e8e9a70a6fd40/Screen%20Recording%202026-06-30%20125610.mp4"></video>
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="2 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/16028#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_16028">2</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>1</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_16028" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">19</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 559 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>559</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/16028" data-post-menu-post-id-value="18991" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_18479" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="18479" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/15611" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="18479">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/15611">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-29T17:19:35Z" title="June 29, 2026 17:19">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">57m 45s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <p>Devlog 5 — Polish, prompts, and the first real release<br>
+Bit of a cleanup session before shipping. First thing, I reworked the summarize prompt. It used to spit out a 1-3 sentence paragraph and I found myself still having to read the whole thing to find what mattered, so now it breaks the text into a few short skimmable bullet points instead. Way nicer to actually use.<br>
+Then I wrote up a proper README. Demo GIFs, feature list, setup steps, the whole thing, so anyone landing on the repo gets what Snap is and how to run it.<br>
+And the big one, I built the first actual release. Set up the icon, ran the Tauri build, and it spat out a real installer that bundles the WebView2 check so it works on a fresh machine. So Snap is now something you can just download and run, not just clone and build yourself. Linked it at the top of the README.<br>
+About an hour all up. Next up is probably finishing translate so theres a proper third action.</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+         data-controller="media-carousel"
+         data-media-carousel-dot-active-class="feed-post-card__media-dot--active"
+         data-media-carousel-arrow-hidden-class="feed-post-card__media-arrow--hidden"
+       >
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport"  data-media-carousel-target="viewport">
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTQwNDUsInB1ciI6ImJsb2JfaWQifX0=--b4c022ff9f5134d76bb24dd5e03ed6905d98d406/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/image.png" />
+
+          </figure>
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTQwNDYsInB1ciI6ImJsb2JfaWQifX0=--847dfcce48b1f39ddcfdbe906349dc9b29e4e01c/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/image.png" />
+
+          </figure>
+      </div>
+        <button type="button"
+                class="feed-post-card__media-arrow feed-post-card__media-arrow--prev feed-post-card__media-arrow--hidden"
+                data-media-carousel-target="prevArrow"
+                data-action="media-carousel#prev"
+                aria-label="Previous image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <button type="button"
+                class="feed-post-card__media-arrow feed-post-card__media-arrow--next"
+                data-media-carousel-target="nextArrow"
+                data-action="media-carousel#next"
+                aria-label="Next image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
+    </div>
+      <div class="feed-post-card__media-dots">
+          <button type="button"
+                  class="feed-post-card__media-dot feed-post-card__media-dot--active"
+                  data-media-carousel-target="dot"
+                  data-action="media-carousel#goTo"
+                  data-index="0"
+                  aria-label="Image 1"></button>
+          <button type="button"
+                  class="feed-post-card__media-dot "
+                  data-media-carousel-target="dot"
+                  data-action="media-carousel#goTo"
+                  data-index="1"
+                  aria-label="Image 2"></button>
+      </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="2 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/15611#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_15611">2</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_15611" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">5</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 79 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>79</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/15611" data-post-menu-post-id-value="18479" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_18181" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="18181" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/15359" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="18181">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/15359">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-29T07:06:03Z" title="June 29, 2026 07:06">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">1h 32m 51s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <p>Devlog #4 Groq is wired in and the popup actually feels like a product now<br>
+Groq is hooked up and the app does its actual job now<br>
+The summarize and enhance shortcuts now actually call Groq and return real text instead of just echoing back what I copied. The API call lives on the Rust side so the key never touches the frontend, and the popup shows a little loading state while it thinks. Seeing it summarize an actual paragraph for the first time was a moment this is finally the thing I set out to build.<br>
+The invisible icon bug<br>
+Then I hit a quick bug that made no sense at first. I added a copy button to the popup with a little icon and the icon just refused to show up. Blank space where it should be. The element was there right size, right color the DOM looked totally fine it just wasnt painting. Turns out its a WebView2 thing where svg icons go invisible specifically on a transparent acrylic window. Took me a minute to even believe that was the actual cause. For the fix I settled on emojis for now. A decent workaround but it works, and theres a little checkmark when you click now so you know the copy landed.<br>
+Polish pass<br>
+The rest was polish and it went fast. The window resize is animated now instead of snapping to size which makes it feel a lot smoother, I hid the scrollbars everywhere, and I fixed a button that kept coming out rectangular instead of square because of some default browser padding I didnt know about. Also settled on the proper acrylic glass blur after the mess from last session and gave it a tint.<br>
+Next up<br>
+is making the popup smart about screen edges so it cant open half off screen, esc to close it, and a little settings screen so I can change the hotkeys without editing code.</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+         data-controller="media-carousel"
+         data-media-carousel-dot-active-class="feed-post-card__media-dot--active"
+         data-media-carousel-arrow-hidden-class="feed-post-card__media-arrow--hidden"
+       >
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport"  data-media-carousel-target="viewport">
+          <figure class="feed-post-card__media-slide ">
+              <video controls="controls" preload="none" poster="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTI2MzksInB1ciI6ImJsb2JfaWQifX0=--d882b4b2f52507583e8f6e3d8fae0b971622fd58/eyJfcmFpbHMiOnsiZGF0YSI6eyJyZXNpemVfdG9fbGltaXQiOls0MDAsMjI1XSwiZm9ybWF0Ijoid2VicCJ9LCJwdXIiOiJ2YXJpYXRpb24ifX0=--121c85938727b52d2972e6f9e674dd03b6ab12ad/Screen%20Recording%202026-06-29%20145212.mp4" class="feed-post-card__video" src="https://stardance.hackclub.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6OTI2MzksInB1ciI6ImJsb2JfaWQifX0=--d882b4b2f52507583e8f6e3d8fae0b971622fd58/Screen%20Recording%202026-06-29%20145212.mp4"></video>
+
+          </figure>
+          <figure class="feed-post-card__media-slide ">
+              <video controls="controls" preload="none" poster="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTI2NDAsInB1ciI6ImJsb2JfaWQifX0=--cf1b96e33f935fa3d73f476131eb34678beec253/eyJfcmFpbHMiOnsiZGF0YSI6eyJyZXNpemVfdG9fbGltaXQiOls0MDAsMjI1XSwiZm9ybWF0Ijoid2VicCJ9LCJwdXIiOiJ2YXJpYXRpb24ifX0=--121c85938727b52d2972e6f9e674dd03b6ab12ad/Screen%20Recording%202026-06-29%20145911.mp4" class="feed-post-card__video" src="https://stardance.hackclub.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6OTI2NDAsInB1ciI6ImJsb2JfaWQifX0=--cf1b96e33f935fa3d73f476131eb34678beec253/Screen%20Recording%202026-06-29%20145911.mp4"></video>
+
+          </figure>
+      </div>
+        <button type="button"
+                class="feed-post-card__media-arrow feed-post-card__media-arrow--prev feed-post-card__media-arrow--hidden"
+                data-media-carousel-target="prevArrow"
+                data-action="media-carousel#prev"
+                aria-label="Previous image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+        </button>
+        <button type="button"
+                class="feed-post-card__media-arrow feed-post-card__media-arrow--next"
+                data-media-carousel-target="nextArrow"
+                data-action="media-carousel#next"
+                aria-label="Next image">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+        </button>
+    </div>
+      <div class="feed-post-card__media-dots">
+          <button type="button"
+                  class="feed-post-card__media-dot feed-post-card__media-dot--active"
+                  data-media-carousel-target="dot"
+                  data-action="media-carousel#goTo"
+                  data-index="0"
+                  aria-label="Image 1"></button>
+          <button type="button"
+                  class="feed-post-card__media-dot "
+                  data-media-carousel-target="dot"
+                  data-action="media-carousel#goTo"
+                  data-index="1"
+                  aria-label="Image 2"></button>
+      </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="2 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/15359#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_15359">2</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_15359" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">4</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 53 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>53</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/15359" data-post-menu-post-id-value="18181" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_17677" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="17677" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/14938" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="17677">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/14938">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-28T15:58:18Z" title="June 28, 2026 15:58">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">3h 36m 24s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <p>Devlog 3 — The floating glass popup and a full day chasing a black box<br>
+The popup window itself was the easy part. It spawns at my cursor, reuses itself on repeat triggers instead of opening a new one every time, and the captured text streams into it with a little typewriter effect. That whole thing took maybe 20 minutes.<br>
+Then I tried to make it look like frosted glass and that ate the entire rest of the day.<br>
+Every time I turned on Tauri’s built in blur effect the window just rendered as a solid black box instead. I went around in circles on this for hours. I killed the native window shadow which fixed one version of the black box but it came right back the moment I re added the blur. I tried a community plugin that promised glass on Windows turned out to be Mac only. Then I found a github repo with a slick demo video claiming real glass, read the actual source and it was just CSS faking it. At that point I genuinely thought maybe its just not possible on Windows.<br>
+Then I found the thing that explained so much of my pain. My CSS file had never been imported anywhere in the app. Not once. Every single style change I made all session had just been silently ignored, no error no warning nothing. I just sat there for a second. All that why isnt this working was me editing a file the app wasnt even reading.<br>
+Even after fixing that Tauri’s built in blur still refused to work so I stopped using its wrapper entirely and called the underlying Windows blur library directly from a small Rust command. It worked immediately. Real native glass, no black box, first try. After a whole day of that seeing it finally render was such a relief.<br>
+One more dumb one ill note so I dont forget it. My rounded corners werent showing up and it turned out the browser paints the page background across the whole window and ignores the corner radius if you put it on the root element. Moved it onto a normal div and it was fine.<br>
+Next up is hooking the actual Groq API call in so the popup shows a real summary instead of just the copied text.</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <video controls="controls" preload="none" poster="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTAxNjIsInB1ciI6ImJsb2JfaWQifX0=--d495e23bc87be437ddbd970e48db93af0d43cd28/eyJfcmFpbHMiOnsiZGF0YSI6eyJyZXNpemVfdG9fbGltaXQiOls0MDAsMjI1XSwiZm9ybWF0Ijoid2VicCJ9LCJwdXIiOiJ2YXJpYXRpb24ifX0=--121c85938727b52d2972e6f9e674dd03b6ab12ad/Screen%20Recording%202026-06-29%20000359.mp4" class="feed-post-card__video" src="https://stardance.hackclub.com/rails/active_storage/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6OTAxNjIsInB1ciI6ImJsb2JfaWQifX0=--d495e23bc87be437ddbd970e48db93af0d43cd28/Screen%20Recording%202026-06-29%20000359.mp4"></video>
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="0 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/14938#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_14938">0</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_14938" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">6</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 79 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>79</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/14938" data-post-menu-post-id-value="17677" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_16934" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="16934" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/14328" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="16934">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/14328">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-27T14:27:05Z" title="June 27, 2026 14:27">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">3h 45m 50s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <h1>Dev log #2 Getting the hotkeys to actually work<a href="#dev-log-2-getting-the-hotkeys-to-actually-work" class="anchor"></a>
+</h1>
+<p>The shortcuts finally fire and copy text. Getting there took most of the session though.</p>
+<p>I first set up the <code>Alt+S</code> and <code>Alt+E</code> shortcuts in TypeScript since that’s the language I’m comfortable in. Bad idea. They broke every time I reloaded the page, threw errors I didn’t understand, and sometimes fired twice. After a lot of digging I figured out the problem. The shortcut is an OS-level thing, but I’d tied it to the React frontend, which reloads constantly while I’m developing, so it kept losing track of itself.</p>
+<p>The fix was to move the shortcut registration over to the Rust side and let React just listen for when a shortcut gets pressed. That killed the whole pile of bugs at once. This was day one of me actually writing Rust so it took a while to get there.</p>
+<p>Most of today was honestly just me with the Tauri docs and the Rust book open side by side. I was looking up basically everything. How Rust handles ownership and errors, how Tauri wants the backend and frontend to talk to each other, what half the functions even did. It was grueling. There were a few moments where I just stared at the screen wondering what I’d gotten myself into. But the docs are solid and stuff slowly started clicking, and by the end it felt good to actually understand what I was writing.</p>
+<p>A couple smaller things I ran into. The copy only worked once I triggered on key release instead of key press, otherwise Alt was still held down and jammed the copy. And Firefox steals the Alt key for its own menu, so I’ll switch to <code>Alt+Shift</code> later or add custom shortcuts.</p>
+<p>So the core loop works now. Highlight text anywhere, press the shortcut, and the app grabs it. Seeing it actually work after all that was a great feeling. I also added a little system tray icon, with menus, so it runs in the background.</p>
+<p><strong>Next up</strong>: make the floating window pop up near my cursor and show the result. Wire a shortcut to an LLM call.</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6ODY2NjEsInB1ciI6ImJsb2JfaWQifX0=--9f05ed0f6a2972cf350a46e8d65416daa9586568/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/Screenshot%202026-06-27%20223012.png" />
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="1 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/14328#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_14328">1</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_14328" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">5</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 77 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>77</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/14328" data-post-menu-post-id-value="16934" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+            
+  <article id="post_16720" class="feed-post-card feed-post-card--linked feed-post-card--profile_dark"
+  data-controller="feed-engagement card-link" data-feed-engagement-item-type-value="post" data-feed-engagement-post-id-value="16720" data-feed-engagement-project-id-value="26067" data-feed-engagement-post-type-value="Post::Devlog" data-card-link-url-value="/projects/26067/devlogs/14155" data-action="click-&gt;card-link#navigate auxclick-&gt;card-link#navigate" data-media-variant="large" data-post-id="16720">
+    <a class="feed-post-card__overlay-link" aria-label="Open comments for this post" href="/projects/26067/devlogs/14155">
+      <span class="feed-post-card__overlay-text">Open comments for this post</span>
+</a>
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@firancly" href="/@firancly">
+          <img alt="" class="feed-post-card__avatar" loading="lazy" decoding="async" src="https://cachet.dunkirk.sh/users/U0BDBQL1PNV/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@firancly">@firancly</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/26067">Snap</a>
+
+        <time class="feed-post-card__time" datetime="2026-06-27T05:05:29Z" title="June 27, 2026 05:05">
+          · about 1 month ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">36m 9s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body-clamp"
+           data-controller="read-more"
+           data-read-more-clamped-class="feed-post-card__body--clamped">
+        <div class="feed-post-card__body feed-post-card__body--clamped markdown-content" data-read-more-target="body">
+          <h1>Dev log #1<a href="#dev-log-1" class="anchor"></a>
+</h1>
+<p><strong>What I’m building:</strong> Snap - a desktop tool that lets you run AI actions on selected text anywhere on your system. Highlight text in any app, press a shortcut, and get an instant result in a floating window. No copy and paste, no switching to a browser tab.</p>
+<p>The idea came from the <code>tldr</code> repo on GitHub. I wanted to generalize that concept system-wide into two workflows:</p>
+<ul>
+<li>
+<strong>Summarize</strong> (<code>Alt + S</code>) — highlight a dense article or long thread, and a floating window appears with a summary.</li>
+<li>
+<strong>Rewrite</strong> (<code>Alt + E</code>) — highlight a prompt like <em>“write an email to my boss”</em>, and the AI returns finished email ready to send.</li>
+</ul>
+<p><strong>Framework choice:</strong> I looked at Electron and Tauri. Electron ships a full Chromium runtime, heavy and slow, so I went with Tauri. The catch: Tauri’s backend is Rust, which I don’t know. Starting to learn it today. The upside is the frontend is TypeScript + React, which I’m already strong in, so the learning curve is contained to the system level layer.</p>
+<p><strong>Today’s goal:</strong> setup the Tauri app, register the <code>Alt + S</code> / <code>Alt + E</code> global shortcuts, and get the silent copy -&gt; clipboard read working so a selection in any app lands in the Rust backend. If that’s solid, wire one shortcut end-to-end to an LLM call and render the result in the floating window.</p>
+
+        </div>
+        <button type="button"
+                class="feed-post-card__read-more"
+                data-read-more-target="toggle"
+                data-action="read-more#toggle"
+                hidden>Read more</button>
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" loading="lazy" decoding="async" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6ODU2NDUsInB1ciI6ImJsb2JfaWQifX0=--1e154daaa21987f9802be6ba318f7e84ff3391bd/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/Untitled-1.png" />
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+      <div class="feed-post-card__comment-action">
+          <a class="feed-post-card__action" aria-label="1 comments" data-action="card-link#navigateComments" href="/projects/26067/devlogs/14155#comments">          <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="captions" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M15.0477 21.9892L14.5601 21.982L14.1239 22.2L14.1219 22.201L14.0104 22.2567L13.9066 22.3259L11 24.2636V23.418C11 22.7598 10.6873 22.3119 10.5172 22.1134C10.3276 21.8923 10.1078 21.7329 9.89068 21.6243L9.69749 21.5276L9.48812 21.4745C8.09894 21.1218 7.70432 20.6616 7.47712 20.1738C7.13629 19.4421 7 18.251 7 16C7 14.3783 7.06525 13.2781 7.25859 12.477C7.43394 11.7504 7.68268 11.4021 8.0095 11.1529C8.40359 10.8523 9.1297 10.533 10.5602 10.3126C11.9772 10.0944 13.8902 10 16.5 10C19.1098 10 21.0228 10.0944 22.4398 10.3126C23.8703 10.533 24.5964 10.8523 24.9905 11.1529C25.3173 11.4021 25.5661 11.7504 25.7414 12.477C25.9347 13.2781 26 14.3783 26 16C26 17.6217 25.9347 18.7219 25.7414 19.523C25.5661 20.2496 25.3173 20.5979 24.9905 20.8471C24.5964 21.1477 23.8703 21.467 22.4398 21.6874C21.0228 21.9056 19.1098 22 16.5 22C15.9934 22 15.5103 21.9961 15.0477 21.9892ZM16.5 24C15.983 24 15.49 23.996 15.018 23.989L15.016 23.99L10.555 26.964C9.89 27.407 9 26.93 9 26.131V23.418C9 23.416 8.998 23.414 8.996 23.413C5.439 22.51 5 20.401 5 16C5 9.5 5.958 8 16.5 8C27.042 8 28 9.5 28 16C28 22.5 27.042 24 16.5 24ZM9 13.5C8.448 13.5 8 13.948 8 14.5C8 15.052 8.448 15.5 9 15.5H23C23.552 15.5 24 15.052 24 14.5C24 13.948 23.552 13.5 23 13.5H9ZM8.92308 16.5C8.41354 16.5 8 16.948 8 17.5C8 18.052 8.41354 18.5 8.92308 18.5H17.0769C17.5865 18.5 18 18.052 18 17.5C18 16.948 17.5865 16.5 17.0769 16.5H8.92308ZM19 17.5C19 16.948 19.4135 16.5 19.9231 16.5H23.0769C23.5865 16.5 24 16.948 24 17.5C24 18.052 23.5865 18.5 23.0769 18.5H19.9231C19.4135 18.5 19 18.052 19 17.5Z"></path></svg>
+          <span id="comments_count_post_devlog_14155">1</span>
+</a>
+      </div>
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_14155" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">6</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 30 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>30</span>
+      </span>
+
+      <div class="feed-post-card__more-wrap" data-controller="post-menu" data-post-menu-url-value="/projects/26067/devlogs/14155" data-post-menu-post-id-value="16720" data-post-menu-project-id-value="26067">
+        <button type="button" class="feed-post-card__more" aria-label="More actions" data-action="post-menu#toggle">
+          <span aria-hidden="true">•••</span>
+        </button>
+
+        <div class="feed-post-card__menu" data-post-menu-target="menu" hidden>
+
+
+          <button type="button" class="feed-post-card__menu-item" data-action="post-menu#share">
+            Copy link to clipboard
+          </button>
+
+        </div>
+      </div>
+  </footer>
+</article>
+
+
+
+      </section>
+
+
+  </div>
+
+
+
+
+
+
+
+  <aside class="discover-rail"
+       aria-label="Discover"
+       data-controller="discover-rail-search"
+       data-discover-rail-search-url-value="/search/global">
+  <div class="discover-rail__search">
+    <input type="search"
+           class="discover-rail__search-input"
+           placeholder="Search…"
+           aria-label="Search"
+           autocomplete="off"
+           data-discover-rail-search-target="input"
+           data-action="input->discover-rail-search#search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" color="white" class="discover-rail__search-icon">
+<g clip-path="url(#clip0_1820_4483)">
+<path d="M39.0527 34.2126L29.8565 25.0156C31.419 22.5281 32.3258 19.5879 32.3258 16.4326C32.3258 7.50574 25.0891 0.27002 16.1626 0.27002C7.23605 0.27002 0 7.50574 0 16.4326C0 25.3598 7.23571 32.5948 16.1626 32.5948C19.5964 32.5948 22.777 31.5213 25.3942 29.6971L34.481 38.7846C35.1124 39.4154 35.9402 39.7295 36.7669 39.7295C37.5946 39.7295 38.4213 39.4154 39.0537 38.7846C40.3155 37.5215 40.3155 35.4754 39.0527 34.2126ZM16.1626 27.3584C10.1291 27.3584 5.23745 22.4671 5.23745 16.4333C5.23745 10.3994 10.1291 5.50781 16.1626 5.50781C22.1964 5.50781 27.0877 10.3994 27.0877 16.4333C27.0877 22.4671 22.1964 27.3584 16.1626 27.3584Z" fill="currentColor"></path>
+</g>
+<defs>
+<clipPath id="clip0_1820_4483">
+<rect width="40" height="40" fill="white"></rect>
+</clipPath>
+</defs>
+</svg>
+    <button type="button"
+            class="discover-rail__search-clear"
+            aria-label="Clear search"
+            data-discover-rail-search-target="clearButton"
+            data-action="discover-rail-search#clear"
+            hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" id="Capa_1" enable-background="new 0 0 320.591 320.591" height="512" viewBox="0 0 320.591 320.591" width="512" fill="currentColor" class="discover-rail__search-clear-icon"><g><g id="close_1_"><path d="m30.391 318.583c-7.86.457-15.59-2.156-21.56-7.288-11.774-11.844-11.774-30.973 0-42.817l257.812-257.813c12.246-11.459 31.462-10.822 42.921 1.424 10.362 11.074 10.966 28.095 1.414 39.875l-259.331 259.331c-5.893 5.058-13.499 7.666-21.256 7.288z"></path><path d="m287.9 318.583c-7.966-.034-15.601-3.196-21.257-8.806l-257.813-257.814c-10.908-12.738-9.425-31.908 3.313-42.817 11.369-9.736 28.136-9.736 39.504 0l259.331 257.813c12.243 11.462 12.876 30.679 1.414 42.922-.456.487-.927.958-1.414 1.414-6.35 5.522-14.707 8.161-23.078 7.288z"></path></g></g></svg>
+    </button>
+  </div>
+
+  <turbo-frame id="discover-rail-results" data-discover-rail-search-target="results" hidden></turbo-frame>
+
+  <div class="discover-rail__widgets" data-discover-rail-search-target="widgets">
+        
+  <section class="mission-panel mission-panel--shipped" aria-label="Mission progress">
+    <header class="mission-panel__header">
+      <div class="mission-panel__identity">
+          <div class="mission-panel__icon">
+            <img alt="" class="mission-panel__icon-img" src="https://stardance.hackclub.com/rails/active_storage/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6OTQyMiwicHVyIjoiYmxvYl9pZCJ9fQ==--440cc6329383086d6c2e57a694a895d9ae28427c/frictionless1.png" />
+          </div>
+        <div class="mission-panel__heading">
+          <p class="mission-panel__eyebrow">Part of mission</p>
+          <h2 class="mission-panel__title">
+            <a class="mission-panel__title-link" href="/missions/frictionless">Frictionless</a>
+          </h2>
+        </div>
+      </div>
+
+      <div class="mission-panel__actions">
+        <a data-turbo="false" class="action-btn action-btn--small action-btn--secondary" href="/missions/frictionless">View mission</a>
+      </div>
+    </header>
+
+
+
+  </section>
+
+
+        
+        <section class="ship-intro-module" aria-label="What is a ship?">
+  <h3 class="ship-intro-module__title">What's a ship?</h3>
+  <div class="ship-intro-module__video">
+    <div class="vimeo-embed">
+  <iframe
+    src="https://player.vimeo.com/video/1197437107"
+    title="What is a Ship?"
+    frameborder="0"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share"
+    allowfullscreen></iframe>
+</div>
+
+  </div>
+</section>
+
+        
+        
+  </div>
+</aside>
+
+
+  <dialog id="delete-project-modal" class="delete-project-modal" data-controller="modal">
+    <div class="delete-project-modal__body">
+      <h3 class="delete-project-modal__title">Delete project?</h3>
+      <p class="delete-project-modal__text">Are you sure you want to permanently delete this project? This action cannot be undone.</p>
+      <p class="delete-project-modal__warning">All devlogs, followers, and associated data will be removed.</p>
+      <div class="delete-project-modal__actions">
+        <button type="button" class="delete-project-modal__btn delete-project-modal__btn--cancel" onclick="document.getElementById('delete-project-modal').close()">Cancel</button>
+        <button type="submit" form="delete-project-form" class="delete-project-modal__btn delete-project-modal__btn--delete">Yes, delete it</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="followers-modal"
+          class="followers-modal"
+          data-profile-modal-target="dialog"
+          data-action="click->profile-modal#backdropClose">
+    <header class="followers-modal__header">
+      <h2 class="followers-modal__title" data-profile-modal-target="title">Followers</h2>
+      <button type="button" class="followers-modal__close" data-action="click->profile-modal#close" aria-label="Close">×</button>
+    </header>
+    <div class="followers-modal__body" data-profile-modal-target="body">
+      <p class="followers-modal__loading">Loading…</p>
+    </div>
+  </dialog>
+
+
+</div>
+
+    
+    
+    <dialog class="post-panel" aria-label="Post"
+        data-controller="post-panel"
+        data-post-panel-target="dialog"
+        data-action="card-link:navigate@window->post-panel#open pointerdown->post-panel#trackPress click->post-panel#backdropClick">
+  <div class="post-panel__content">
+    <header class="post-panel__header">
+      <button type="button" class="post-panel__close" data-action="post-panel#close" aria-label="Close">&times;</button>
+    </header>
+    <div class="post-panel__body">
+      <div class="devlog-detail__post" data-post-panel-target="cardSlot"></div>
+      <turbo-frame data-post-panel-target="frame" data-action="turbo:before-frame-render-&gt;post-panel#clearPlaceholder turbo:frame-load-&gt;post-panel#frameLoaded turbo:submit-end-&gt;post-panel#frameSubmitted" id="post-panel-comments" target="_top">
+        <div class="post-panel__loading">
+          <span class="feed-loading__spinner" aria-hidden="true"></span>
+        </div>
+</turbo-frame>    </div>
+  </div>
+</dialog>
+
+    
+      <footer class="dev-footer">
+        <p>
+          Build <a href="https://github.com/hackclub/stardance/commit/28bd856a8cdf1ee6f84a83b52e734182d1a2bc8c">28bd856a</a>
+          from about 2 hours ago.
+          (DB: 31 queries, 9 cached)
+          (CACHE: 22 hits, 0 misses)
+          (0.6 req/sec)
+          (Active: 80 signed in, 358 visitors)
+        </p>
+      </footer>
+  </body>
+</html>
