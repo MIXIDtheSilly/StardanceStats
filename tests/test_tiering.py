@@ -39,13 +39,15 @@ def test_frozen_beats_everything():
 
 
 def test_unknown_lastmod_is_cold_not_hot():
-    """Defaulting to hot would put every undated page on a six-hourly crawl."""
+    """Defaulting to hot would put every undated page on the hot schedule."""
     assert classify(now=NOW, sitemap_lastmod=None) == "cold"
 
 
 def test_next_due_follows_the_tier():
     assert next_due("hot", last_crawled=NOW) == NOW + timedelta(hours=settings.tier_hot_hours)
-    assert next_due("frozen", last_crawled=NOW) == NOW + timedelta(days=30)
+    assert next_due("frozen", last_crawled=NOW) == (
+        NOW + timedelta(hours=settings.tier_frozen_hours)
+    )
 
 
 def test_unknown_tier_falls_back_to_cold_not_zero():

@@ -212,7 +212,7 @@ async def test_a_gone_page_freezes_and_leaves_the_queue(db):
     row = await db.crawl_frontier.find_one({"_id": "project:1"})
     assert row["tier"] == "frozen"
     assert row["gone"] is True
-    assert row["next_due"] == NOW + timedelta(days=30)
+    assert row["next_due"] == NOW + timedelta(hours=settings.tier_frozen_hours)
     assert await frontier.due(db, now=NOW + timedelta(days=90)) == []
 
 

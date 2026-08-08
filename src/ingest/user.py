@@ -129,10 +129,16 @@ async def ingest_user(
     await db.users.update_one({"_id": uid}, {"$set": doc}, upsert=True)
 
     linked = await link_user_id(db, uid, username)
-    totals = await recompute_user_totals(db, uid)
+    previous_totals = (existing or {}).get("totals")
+    # This crawl owns the snapshot; recompute writing its own would duplicate it.
+    totals = await recompute_user_totals(db, uid, now=now, snapshot=False)
+    # Out of `changed` deliberately: tiering must not recrawl a page for this.
+    totals_changed = _changed_keys(previous_totals, totals, COMPUTED_TOTALS)
 
     wrote_snapshot = False
-    if not user["hidden"] and (first_ingest or changed or await _heartbeat_due(db, uid, now)):
+    if not user["hidden"] and (
+        first_ingest or changed or totals_changed or await _heartbeat_due(db, uid, now)
+    ):
         await db.user_snapshots.insert_one(_snapshot(uid, {**stats, **totals}, now))
         wrote_snapshot = True
 
@@ -145,6 +151,7 @@ async def ingest_user(
         "hidden": user.get("hidden", False),
         "renamed_from": renamed_from,
         "changed": sorted(changed),
+        "totals_changed": sorted(totals_changed),
         "snapshot": wrote_snapshot,
         "linked": linked,
         "totals": totals,
@@ -179,9 +186,14 @@ async def link_user_id(
 
 
 async def recompute_user_totals(
-    db: AsyncIOMotorDatabase, user_id: int
+    db: AsyncIOMotorDatabase,
+    user_id: int,
+    *,
+    now: datetime | None = None,
+    snapshot: bool = True,
 ) -> dict[str, Any]:
     """Roll a user's crawled rows into ranking figures, plus a coverage flag."""
+    now = now or utcnow()
     ships = await db.ships.aggregate([
         {"$match": {"user_id": user_id}},
         {"$group": {
@@ -242,7 +254,9 @@ async def recompute_user_totals(
         estimate_unpaid(totals["ship_stardust"], totals["hours"], paid_hours)
     )
 
-    user = await db.users.find_one({"_id": user_id}, {"stats": 1, "project_ids": 1})
+    user = await db.users.find_one(
+        {"_id": user_id}, {"stats": 1, "project_ids": 1, "totals": 1, "hidden": 1}
+    )
     reported = (user or {}).get("stats") or {}
     claimed = (user or {}).get("project_ids")
     coverage = {
@@ -269,6 +283,14 @@ async def recompute_user_totals(
             },
         },
     )
+
+    # Their totals move on a project crawl, so history cannot wait for a profile one.
+    if snapshot and user and not user.get("hidden"):
+        if _changed_keys((user or {}).get("totals"), totals, COMPUTED_TOTALS):
+            await db.user_snapshots.insert_one(
+                _snapshot(user_id, {**reported, **totals}, now)
+            )
+
     return totals
 
 

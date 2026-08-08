@@ -9,6 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from ...collector.frontier import queue_depth
 from ...parsers.common import utcnow
 from ..deps import db as db_dep
+from ..services.history import MAX_BUCKETS, METRICS
 
 router = APIRouter()
 
@@ -74,6 +75,17 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "users": await db.users.count_documents({}),
             "project_snapshots": await db.project_snapshots.count_documents({}),
             "user_snapshots": await db.user_snapshots.count_documents({}),
+            "global_snapshots": await db.global_snapshots.count_documents({}),
+        },
+        "metrics": {kind: sorted(source.metrics) for kind, source in METRICS.items()},
+        "history": {
+            "intervals": ["1h", "1d", "1w"],
+            "fill": ["none", "locf"],
+            "max_buckets": MAX_BUCKETS,
+            "note": (
+                "A point is written when a tracked number moves, plus a daily "
+                "heartbeat. Deltas are computed per request, never stored."
+            ),
         },
         "coverage": {
             "users_complete": await db.users.count_documents({"coverage.complete": True}),
@@ -92,5 +104,9 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "leaderboard, which is opt-in and ranks on stale approx_ columns.",
             "ship_stardust counts ship payouts only, and is a lower bound until every "
             "one of a user's projects has been crawled. See coverage.complete.",
+            "Devlogs carry current engagement figures but no history of their own; "
+            "their likes and comments are tracked in the project's totals.",
+            "Global history sums the rows we hold, so early growth is partly our own "
+            "crawl catching up rather than the platform's.",
         ],
     }

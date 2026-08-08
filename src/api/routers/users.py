@@ -7,15 +7,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..deps import db as db_dep
+from ..services import HistoryError, Interval, bucketed_series, stamp
+from ..services.history import METRICS, parse_metrics
 
 router = APIRouter()
 
-USER_METRICS = {
-    "followers", "following", "devlogs", "projects", "ships", "votes",
-    "streak", "achievements_earned", "ship_stardust", "hours", "shipped_hours",
-    "paid_hours", "likes_received", "comments_received", "reposts_received",
-    "views_received", "best_multiplier", "avg_multiplier",
-}
+USER_METRICS = METRICS["user"].metrics
 
 # totals.* is computed from our crawled rows, stats.* comes off the profile.
 LEADERBOARD_METRICS = {
@@ -34,15 +31,6 @@ LEADERBOARD_METRICS = {
     "ships": "stats.ships",
     "projects": "stats.projects",
 }
-
-Interval = Literal["1h", "1d", "1w"]
-
-_TRUNC = {
-    "1h": {"unit": "hour", "binSize": 1},
-    "1d": {"unit": "day", "binSize": 1},
-    "1w": {"unit": "week", "binSize": 1},
-}
-
 
 async def _find_user(db: AsyncIOMotorDatabase, ref: str) -> dict[str, Any]:
     """Look up by id or handle, including previous handles after a rename."""
@@ -65,7 +53,8 @@ async def _find_user(db: AsyncIOMotorDatabase, ref: str) -> dict[str, Any]:
 
 @router.get("/users/{ref}")
 async def get_user(ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
-    return await _find_user(db, ref)
+    doc = await _find_user(db, ref)
+    return stamp(doc, doc.get("last_crawled"))
 
 
 @router.get("/users/{ref}/projects")
@@ -77,7 +66,15 @@ async def get_user_projects(
         {"$or": [{"owner_id": user["_id"]}, {"member_ids": user["_id"]}]}
     ).sort([("stats.stardust_total", -1)])
     items = await cursor.to_list(length=200)
-    return {"user_id": user["_id"], "username": user["username"], "total": len(items), "items": items}
+    return stamp(
+        {
+            "user_id": user["_id"],
+            "username": user["username"],
+            "total": len(items),
+            "items": items,
+        },
+        user.get("last_crawled"),
+    )
 
 
 @router.get("/users/{ref}/devlogs")
@@ -92,14 +89,17 @@ async def get_user_devlogs(
     query = {"user_id": user["_id"]}
     total = await db.devlogs.count_documents(query)
     cursor = db.devlogs.find(query).sort([(sort, -1)]).skip(offset).limit(limit)
-    return {
-        "user_id": user["_id"],
-        "username": user["username"],
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-        "items": await cursor.to_list(length=limit),
-    }
+    return stamp(
+        {
+            "user_id": user["_id"],
+            "username": user["username"],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "items": await cursor.to_list(length=limit),
+        },
+        user.get("last_crawled"),
+    )
 
 
 @router.get("/users/{ref}/ships")
@@ -109,13 +109,16 @@ async def get_user_ships(
     user = await _find_user(db, ref)
     cursor = db.ships.find({"user_id": user["_id"]}).sort([("shipped_at", -1)])
     items = await cursor.to_list(length=500)
-    return {
-        "user_id": user["_id"],
-        "username": user["username"],
-        "total": len(items),
-        "stardust_total": sum(s.get("payout") or 0 for s in items),
-        "items": items,
-    }
+    return stamp(
+        {
+            "user_id": user["_id"],
+            "username": user["username"],
+            "total": len(items),
+            "stardust_total": sum(s.get("payout") or 0 for s in items),
+            "items": items,
+        },
+        user.get("last_crawled"),
+    )
 
 
 @router.get("/users/{ref}/history")
@@ -126,59 +129,28 @@ async def get_user_history(
     start: datetime | None = None,
     end: datetime | None = None,
     delta: bool = Query(True),
+    fill: Literal["none", "locf"] = Query(
+        "none", description="locf carries the last observation into empty buckets."
+    ),
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
     """Bucketed time series for one user, reporting the last value per bucket."""
     user = await _find_user(db, ref)
 
-    requested = [m.strip() for m in metrics.split(",") if m.strip()]
-    unknown = [m for m in requested if m not in USER_METRICS]
-    if unknown:
-        raise HTTPException(400, f"unknown metric(s): {unknown}; valid: {sorted(USER_METRICS)}")
-    if not requested:
-        raise HTTPException(400, "no metrics requested")
+    try:
+        requested = parse_metrics("user", metrics)
+        result = await bucketed_series(
+            db, "user", user["_id"],
+            metrics=requested, interval=interval, start=start, end=end,
+            delta=delta, fill=fill,
+        )
+    except HistoryError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
-    match: dict[str, Any] = {"uid": user["_id"]}
-    if start or end:
-        window: dict[str, Any] = {}
-        if start:
-            window["$gte"] = start
-        if end:
-            window["$lte"] = end
-        match["ts"] = window
-
-    group: dict[str, Any] = {"_id": {"$dateTrunc": {"date": "$ts", **_TRUNC[interval]}}}
-    for metric in requested:
-        group[metric] = {"$last": f"${metric}"}
-
-    rows = await db.user_snapshots.aggregate([
-        {"$match": match},
-        {"$sort": {"ts": 1}},
-        {"$group": group},
-        {"$sort": {"_id": 1}},
-    ]).to_list(length=100_000)
-
-    series: dict[str, list[dict[str, Any]]] = {}
-    for metric in requested:
-        points: list[dict[str, Any]] = []
-        previous: float | int | None = None
-        for row in rows:
-            value = row.get(metric)
-            if value is None:
-                continue
-            point: dict[str, Any] = {"ts": row["_id"], "v": value}
-            if delta and previous is not None:
-                point["d"] = round(value - previous, 4)
-            points.append(point)
-            previous = value
-        series[metric] = points
-
-    return {
-        "entity": {"type": "user", "id": user["_id"], "username": user["username"]},
-        "interval": interval,
-        "buckets": len(rows),
-        "series": series,
+    result["entity"] = {
+        "type": "user", "id": user["_id"], "username": user.get("username")
     }
+    return stamp(result, user.get("last_crawled"))
 
 
 @router.get("/leaderboard")
@@ -203,7 +175,11 @@ async def leaderboard(
         query["coverage.complete"] = True
 
     cursor = (
-        db.users.find(query, {"username": 1, "avatar_url": 1, "stats": 1, "totals": 1, "coverage": 1})
+        db.users.find(
+            query,
+            {"username": 1, "avatar_url": 1, "stats": 1, "totals": 1,
+             "coverage": 1, "last_crawled": 1},
+        )
         .sort([(field, -1)])
         .skip(offset)
         .limit(limit)
@@ -222,14 +198,19 @@ async def leaderboard(
         }
         for i, r in enumerate(rows)
     ]
-    return {
-        "metric": metric,
-        "source": "computed from crawled rows",
-        "total": await db.users.count_documents(query),
-        "limit": limit,
-        "offset": offset,
-        "items": items,
-    }
+    # The oldest row on the page bounds how current the ranking is.
+    as_of = min((r["last_crawled"] for r in rows if r.get("last_crawled")), default=None)
+    return stamp(
+        {
+            "metric": metric,
+            "source": "computed from crawled rows",
+            "total": await db.users.count_documents(query),
+            "limit": limit,
+            "offset": offset,
+            "items": items,
+        },
+        as_of,
+    )
 
 
 @router.get("/leaderboard/metrics")

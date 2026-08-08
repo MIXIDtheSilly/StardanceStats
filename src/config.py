@@ -89,6 +89,10 @@ class Settings(BaseSettings):
     snapshot_heartbeat_hours: int = 24
     anomaly_drop_threshold: float = 0.20
 
+    # Tiers crawl every 6 h to 7 d, so two quiet days is worth telling a reader.
+    api_stale_after_hours: float = 48.0
+    api_cache_seconds: int = 300
+
     @property
     def proxy_list(self) -> list[str]:
         """Inline entries plus the file's, de-duplicated."""

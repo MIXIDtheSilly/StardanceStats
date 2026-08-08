@@ -12,6 +12,8 @@ log = logging.getLogger(__name__)
 
 SCOPE = "platform"
 
+_COUNTS = ("users", "projects", "devlogs", "ships", "users_known", "projects_known")
+
 _PROJECT_SUMS = {
     "hours": "$stats.total_hours",
     "shipped_hours": "$stats.shipped_hours",
@@ -23,6 +25,9 @@ _PROJECT_SUMS = {
     "views": "$stats.views",
     "followers": "$stats.followers",
 }
+
+# Every field a point carries, and so every metric the history API will serve.
+TRACKED = _COUNTS + tuple(_PROJECT_SUMS)
 
 
 async def rollup_global(

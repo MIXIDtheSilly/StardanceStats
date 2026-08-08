@@ -7,22 +7,18 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..deps import db as db_dep
+from ..services import HistoryError, Interval, bucketed_series, stamp
+from ..services.history import METRICS, parse_metrics
 
 router = APIRouter()
 
-PROJECT_METRICS = {
-    "devlogs", "total_hours", "shipped_hours", "paid_hours", "followers",
-    "likes", "comments", "reposts", "views", "ships", "stardust_total",
-    "latest_multiplier",
-}
+PROJECT_METRICS = METRICS["project"].metrics
 
-Interval = Literal["1h", "1d", "1w"]
 
-_TRUNC = {
-    "1h": {"unit": "hour", "binSize": 1},
-    "1d": {"unit": "day", "binSize": 1},
-    "1w": {"unit": "week", "binSize": 1},
-}
+async def _as_of(db: AsyncIOMotorDatabase, project_id: int) -> datetime | None:
+    """The project's own crawl time; its devlogs and ships come off that page."""
+    doc = await db.projects.find_one({"_id": project_id}, {"last_crawled": 1})
+    return (doc or {}).get("last_crawled")
 
 
 @router.get("/projects/{project_id}")
@@ -32,7 +28,7 @@ async def get_project(
     doc = await db.projects.find_one({"_id": project_id})
     if not doc:
         raise HTTPException(404, f"project {project_id} not tracked")
-    return doc
+    return stamp(doc, doc.get("last_crawled"))
 
 
 @router.get("/projects/{project_id}/devlogs")
@@ -50,13 +46,16 @@ async def get_project_devlogs(
         .skip(offset)
         .limit(limit)
     )
-    return {
-        "project_id": project_id,
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-        "items": await cursor.to_list(length=limit),
-    }
+    return stamp(
+        {
+            "project_id": project_id,
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "items": await cursor.to_list(length=limit),
+        },
+        await _as_of(db, project_id),
+    )
 
 
 @router.get("/projects/{project_id}/ships")
@@ -65,12 +64,15 @@ async def get_project_ships(
 ) -> dict[str, Any]:
     cursor = db.ships.find({"project_id": project_id}).sort([("ship_number", 1)])
     items = await cursor.to_list(length=200)
-    return {
-        "project_id": project_id,
-        "total": len(items),
-        "stardust_total": sum(s.get("payout") or 0 for s in items),
-        "items": items,
-    }
+    return stamp(
+        {
+            "project_id": project_id,
+            "total": len(items),
+            "stardust_total": sum(s.get("payout") or 0 for s in items),
+            "items": items,
+        },
+        await _as_of(db, project_id),
+    )
 
 
 @router.get("/projects/{project_id}/history")
@@ -84,66 +86,30 @@ async def get_project_history(
     start: datetime | None = None,
     end: datetime | None = None,
     delta: bool = Query(True, description="Include per-bucket change."),
+    fill: Literal["none", "locf"] = Query(
+        "none", description="locf carries the last observation into empty buckets."
+    ),
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
     """Bucketed time series, reporting the last observation per bucket."""
-    requested = [m.strip() for m in metrics.split(",") if m.strip()]
-    unknown = [m for m in requested if m not in PROJECT_METRICS]
-    if unknown:
-        raise HTTPException(400, f"unknown metric(s): {unknown}; valid: {sorted(PROJECT_METRICS)}")
-    if not requested:
-        raise HTTPException(400, "no metrics requested")
-
     project = await db.projects.find_one(
-        {"_id": project_id}, projection={"title": 1, "owner_username": 1}
+        {"_id": project_id}, projection={"title": 1, "owner_username": 1, "last_crawled": 1}
     )
     if not project:
         raise HTTPException(404, f"project {project_id} not tracked")
 
-    match: dict[str, Any] = {"pid": project_id}
-    if start or end:
-        window: dict[str, Any] = {}
-        if start:
-            window["$gte"] = start
-        if end:
-            window["$lte"] = end
-        match["ts"] = window
+    try:
+        requested = parse_metrics("project", metrics)
+        result = await bucketed_series(
+            db, "project", project_id,
+            metrics=requested, interval=interval, start=start, end=end,
+            delta=delta, fill=fill,
+        )
+    except HistoryError as exc:
+        raise HTTPException(400, str(exc)) from exc
 
-    group: dict[str, Any] = {
-        "_id": {"$dateTrunc": {"date": "$ts", **_TRUNC[interval]}},
-        "synthetic": {"$last": "$synthetic"},
+    result["entity"] = {
+        "type": "project", "id": project_id, "title": project.get("title"),
+        "owner": project.get("owner_username"),
     }
-    for metric in requested:
-        group[metric] = {"$last": f"${metric}"}
-
-    pipeline = [
-        {"$match": match},
-        {"$sort": {"ts": 1}},
-        {"$group": group},
-        {"$sort": {"_id": 1}},
-    ]
-    rows = await db.project_snapshots.aggregate(pipeline).to_list(length=100_000)
-
-    series: dict[str, list[dict[str, Any]]] = {}
-    for metric in requested:
-        points: list[dict[str, Any]] = []
-        previous: float | int | None = None
-        for row in rows:
-            value = row.get(metric)
-            if value is None:
-                continue
-            point: dict[str, Any] = {"ts": row["_id"], "v": value}
-            if delta and previous is not None:
-                point["d"] = round(value - previous, 4)
-            if row.get("synthetic"):
-                point["synthetic"] = True
-            points.append(point)
-            previous = value
-        series[metric] = points
-
-    return {
-        "entity": {"type": "project", "id": project_id, "title": project.get("title")},
-        "interval": interval,
-        "buckets": len(rows),
-        "series": series,
-    }
+    return stamp(result, project.get("last_crawled"))

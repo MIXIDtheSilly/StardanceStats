@@ -294,6 +294,39 @@ async def test_snapshot_carries_both_profile_stats_and_our_totals(db):
     assert snap["likes_received"] == 271
 
 
+async def test_a_totals_change_writes_history_without_a_profile_crawl(db):
+    """Totals move when a project of theirs is crawled, not when they are."""
+    await craw(db)
+    assert await db.user_snapshots.count_documents({"uid": 99}) == 1
+
+    await ingest_project(db, parse_project(), now=NOW)
+    await recompute_user_totals(db, 99, now=NOW + timedelta(hours=1))
+
+    snaps = await db.user_snapshots.find({"uid": 99}).sort("ts", 1).to_list(10)
+    assert [s.get("ship_stardust") for s in snaps] == [0, 3042]
+
+
+async def test_recomputing_unchanged_totals_writes_nothing(db):
+    await ingest_project(db, parse_project(), now=NOW)
+    await craw(db)
+    before = await db.user_snapshots.count_documents({"uid": 99})
+
+    await recompute_user_totals(db, 99, now=NOW + timedelta(hours=2))
+
+    assert await db.user_snapshots.count_documents({"uid": 99}) == before
+
+
+async def test_totals_moving_does_not_make_the_profile_page_look_changed(db):
+    """`changed` drives tiering, so it stays the page's own signal."""
+    await craw(db)
+    await ingest_project(db, parse_project(), now=NOW)
+
+    summary = await craw(db, now=NOW + timedelta(hours=3))
+    assert summary["changed"] == []
+    assert "ship_stardust" in summary["totals_changed"]
+    assert summary["snapshot"] is True
+
+
 async def test_collapsed_profile_is_rejected(db):
     await ingest_user(db, parse_user(), now=NOW)
 
