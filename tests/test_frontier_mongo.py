@@ -134,17 +134,36 @@ async def test_relisting_revives_a_frozen_row(db):
     assert row["next_due"] == back
 
 
-async def test_repeated_unchanged_crawls_demote_to_cold(db):
+async def test_a_quiet_stretch_demotes_to_cold(db):
+    await apply_sitemap(db, entries(("project", 1, NOW)), now=NOW)
+    quiet_for = timedelta(hours=settings.cold_after_unchanged_hours)
+
+    await frontier.record_crawl(db, "project", 1, status="ok", changed=False, now=NOW)
+    row = await db.crawl_frontier.find_one({"_id": "project:1"})
+    assert row["unchanged_since"] == NOW
+    assert row["tier"] == "hot"
+
+    await frontier.record_crawl(
+        db, "project", 1, status="ok", changed=False, now=NOW + quiet_for
+    )
+    row = await db.crawl_frontier.find_one({"_id": "project:1"})
+    # The clock still runs from the streak's first crawl, not this one.
+    assert row["unchanged_since"] == NOW
+    assert row["tier"] == "cold"
+
+
+async def test_crawling_more_often_does_not_demote_sooner(db):
+    """The whole point of timing the streak instead of counting it."""
     await apply_sitemap(db, entries(("project", 1, NOW)), now=NOW)
 
-    for i in range(settings.cold_after_unchanged):
+    for minute in range(0, 120, 10):
         await frontier.record_crawl(
-            db, "project", 1, status="ok", changed=False, now=NOW + timedelta(hours=i)
+            db, "project", 1, status="ok", changed=False, now=NOW + timedelta(minutes=minute)
         )
 
     row = await db.crawl_frontier.find_one({"_id": "project:1"})
-    assert row["consecutive_unchanged"] == settings.cold_after_unchanged
-    assert row["tier"] == "cold"
+    assert row["consecutive_unchanged"] == 12
+    assert row["tier"] == "hot"
 
 
 async def test_a_change_resets_the_demotion_counter(db):
@@ -155,6 +174,7 @@ async def test_a_change_resets_the_demotion_counter(db):
     await frontier.record_crawl(db, "project", 1, status="ok", changed=True, now=NOW)
     row = await db.crawl_frontier.find_one({"_id": "project:1"})
     assert row["consecutive_unchanged"] == 0
+    assert row["unchanged_since"] is None
     assert row["tier"] == "hot"
     assert row["last_changed"] == NOW
 
@@ -172,9 +192,9 @@ async def test_first_ingest_tiers_from_the_sitemap_not_from_change(db):
     assert fresh["tier"] == "hot"     # upstream touched it yesterday
     assert stale["tier"] == "cold"    # untouched for three months
 
-    # And it does not count against the demotion budget either way.
-    assert fresh["consecutive_unchanged"] == 0
-    assert stale["consecutive_unchanged"] == 0
+    # And it does not start the demotion clock either way.
+    assert fresh["unchanged_since"] is None
+    assert stale["unchanged_since"] is None
 
 
 async def test_not_modified_counts_as_unchanged(db):

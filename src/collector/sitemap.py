@@ -160,6 +160,7 @@ async def apply_sitemap(
             "first_seen": now,
             "last_crawled": None,
             "consecutive_unchanged": 0,
+            "unchanged_since": None,
             "error_count": 0,
         }
 

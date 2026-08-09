@@ -117,6 +117,7 @@ async def seed_id_range(
         "first_seen": now,
         "last_crawled": None,
         "consecutive_unchanged": 0,
+        "unchanged_since": None,
         "error_count": 0,
         # None means due now, so seeded rows crawl on the next pass.
         "next_due": None,
@@ -167,6 +168,7 @@ async def record_crawl(
     existing = await db.crawl_frontier.find_one({"_id": fid}) or {}
 
     unchanged = int(existing.get("consecutive_unchanged") or 0)
+    unchanged_since = existing.get("unchanged_since")
     errors = int(existing.get("error_count") or 0)
 
     doc: dict[str, Any] = {
@@ -193,19 +195,24 @@ async def record_crawl(
         else:
             if changed is None:
                 unchanged = 0
+                unchanged_since = None
             elif changed:
                 unchanged = 0
+                unchanged_since = None
                 doc["last_changed"] = now
             else:
                 unchanged += 1
+                # The streak's first crawl starts the clock, not this one.
+                unchanged_since = unchanged_since or now
 
             tier = classify(
                 now=now,
                 sitemap_lastmod=existing.get("sitemap_lastmod"),
-                consecutive_unchanged=unchanged,
+                unchanged_since=unchanged_since,
                 changed=bool(changed),
             )
         doc["consecutive_unchanged"] = unchanged
+        doc["unchanged_since"] = unchanged_since
         doc["next_due"] = next_due(tier, last_crawled=now)
 
     doc["tier"] = tier

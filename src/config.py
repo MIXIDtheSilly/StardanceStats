@@ -78,7 +78,8 @@ class Settings(BaseSettings):
     tier_cold_hours: float = 24.0 * 7
     tier_frozen_hours: float = 24.0 * 30
     # This, not the lastmod window, is what makes 30k pages fit in a day.
-    cold_after_unchanged: int = 5
+    # Quiet time, not crawl count, so a faster tier cannot demote sooner.
+    cold_after_unchanged_hours: float = 30.0
 
     max_error_backoff_hours: float = 12.0
     crawl_batch_size: int = 50

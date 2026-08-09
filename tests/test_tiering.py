@@ -21,16 +21,26 @@ def test_lastmod_window_picks_the_tier():
     assert classify(now=NOW, sitemap_lastmod=days_ago(60)) == "cold"
 
 
-def test_unchanged_crawls_demote_past_the_lastmod_window():
+def test_a_quiet_stretch_demotes_past_the_lastmod_window():
     """A third of 30k pages sit inside the 30-day window and would want a daily crawl."""
     fresh = days_ago(1)
-    assert classify(now=NOW, sitemap_lastmod=fresh, consecutive_unchanged=4) == "hot"
-    assert classify(now=NOW, sitemap_lastmod=fresh, consecutive_unchanged=5) == "cold"
+    quiet_for = timedelta(hours=settings.cold_after_unchanged_hours)
+    assert classify(now=NOW, sitemap_lastmod=fresh, unchanged_since=NOW) == "hot"
+    assert classify(
+        now=NOW, sitemap_lastmod=fresh, unchanged_since=NOW - quiet_for + timedelta(minutes=1)
+    ) == "hot"
+    assert classify(now=NOW, sitemap_lastmod=fresh, unchanged_since=NOW - quiet_for) == "cold"
+
+
+def test_demotion_is_paced_by_the_clock_not_the_crawl_rate():
+    """Polling a page twelve times as often must not demote it twelve times sooner."""
+    quiet_since = NOW - timedelta(hours=settings.cold_after_unchanged_hours / 2)
+    assert classify(now=NOW, sitemap_lastmod=days_ago(1), unchanged_since=quiet_since) == "hot"
 
 
 def test_a_change_beats_demotion():
     assert classify(
-        now=NOW, sitemap_lastmod=days_ago(90), consecutive_unchanged=20, changed=True
+        now=NOW, sitemap_lastmod=days_ago(90), unchanged_since=days_ago(20), changed=True
     ) == "hot"
 
 

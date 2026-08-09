@@ -34,7 +34,7 @@ def classify(
     *,
     now: datetime,
     sitemap_lastmod: datetime | None,
-    consecutive_unchanged: int = 0,
+    unchanged_since: datetime | None = None,
     changed: bool = False,
     frozen: bool = False,
 ) -> str:
@@ -43,8 +43,10 @@ def classify(
         return "frozen"
     if changed:
         return "hot"
-    if consecutive_unchanged >= settings.cold_after_unchanged:
-        return "cold"
+    if unchanged_since is not None:
+        quiet = now - unchanged_since
+        if quiet >= timedelta(hours=settings.cold_after_unchanged_hours):
+            return "cold"
     if sitemap_lastmod is None:
         return "cold"
 
