@@ -267,6 +267,41 @@ async def test_hot_rows_are_served_before_cold_ones(db):
     assert ordered == [3, 2, 1]
 
 
+async def test_a_thread_is_starved_by_the_pages_it_shares_a_lane_with(db):
+    """Why threads get their own lane: queued at now, they sort last."""
+    await apply_sitemap(
+        db, entries(("project", 1, NOW - timedelta(days=10))), now=NOW
+    )
+    await frontier.enqueue_devlogs(db, [{"_id": 5, "project_id": 1}], now=NOW)
+
+    # Same priority, and the overdue page carries the older next_due.
+    shared = [row["_id"] for row in await frontier.due(db, limit=1, now=NOW)]
+    assert shared == ["project:1"]
+
+    lane = [row["_id"] for row in await frontier.due(db, kind="devlog", now=NOW)]
+    assert lane == ["devlog:5"]
+
+
+async def test_excluding_a_kind_leaves_the_rest_in_order(db):
+    await apply_sitemap(
+        db,
+        entries(("project", 1, NOW), ("project", 2, NOW - timedelta(days=10))),
+        now=NOW,
+    )
+    await frontier.enqueue_devlogs(db, [{"_id": 5, "project_id": 1}], now=NOW)
+
+    rows = await frontier.due(db, exclude=("devlog",), now=NOW)
+    assert [row["ref_id"] for row in rows] == [1, 2]
+
+
+async def test_a_named_kind_wins_over_an_exclusion(db):
+    await apply_sitemap(db, entries(("project", 1, NOW)), now=NOW)
+    await frontier.enqueue_devlogs(db, [{"_id": 5, "project_id": 1}], now=NOW)
+
+    rows = await frontier.due(db, kind="devlog", exclude=("devlog",), now=NOW)
+    assert [row["_id"] for row in rows] == ["devlog:5"]
+
+
 async def test_queue_depth_reports_tiers_and_what_is_due(db):
     await apply_sitemap(
         db,

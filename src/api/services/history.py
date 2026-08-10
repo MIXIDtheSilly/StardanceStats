@@ -7,7 +7,7 @@ from typing import Any, Literal
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...collector.rollup import TRACKED as GLOBAL_TRACKED
-from ...ingest.project import TRACKED as PROJECT_TRACKED
+from ...ingest.project import DEVLOG_TRACKED, TRACKED as PROJECT_TRACKED
 from ...ingest.shop import TRACKED as SHOP_TRACKED
 from ...ingest.user import TRACKED as USER_TRACKED
 
@@ -45,6 +45,7 @@ class Source:
 
 METRICS: dict[str, Source] = {
     "project": Source("project_snapshots", "pid", frozenset(PROJECT_TRACKED)),
+    "devlog": Source("devlog_snapshots", "did", frozenset(DEVLOG_TRACKED)),
     "user": Source("user_snapshots", "uid", frozenset(USER_TRACKED)),
     "shop": Source("shop_snapshots", "sid", frozenset(SHOP_TRACKED)),
     "global": Source("global_snapshots", "scope", frozenset(GLOBAL_TRACKED)),

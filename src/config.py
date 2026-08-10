@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     comment_queue_limit: int = 2000
     # Only a backstop: the project page's counter is what queues a thread.
     comment_recheck_hours: float = 24.0 * 14
+    # Sweep threads never read, once, on the next start. Cheap to leave on: a
+    # second run finds nothing left to do.
+    backfill_comments: bool = False
 
     max_error_backoff_hours: float = 12.0
     crawl_batch_size: int = 50

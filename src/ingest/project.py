@@ -23,6 +23,9 @@ TRACKED = (
     "latest_multiplier",
 )
 
+# The same, per devlog card. Duration moves when an author edits a post.
+DEVLOG_TRACKED = ("likes", "comments", "reposts", "views", "duration_seconds")
+
 
 class AnomalyRejected(Exception):
     """A parsed page looked structurally fine but its numbers did not."""
@@ -247,7 +250,7 @@ async def ingest_project(
 
     await db.projects.update_one({"_id": pid}, {"$set": doc}, upsert=True)
 
-    threads_flagged = await _write_devlogs(db, devlogs, now)
+    written_devlogs = await _write_devlogs(db, devlogs, now)
     await _write_ships(db, ships, now)
     linked_users = await _link_known_users(db, doc)
 
@@ -270,7 +273,8 @@ async def ingest_project(
         "first_ingest": first_ingest,
         "devlogs": len(devlogs),
         "ships": len(ships),
-        "threads_flagged": threads_flagged,
+        "threads_flagged": written_devlogs["flagged"],
+        "devlog_snapshots": written_devlogs["snapshots"],
         "changed": sorted(changed),
         "snapshot": wrote_snapshot,
         "backfilled": backfilled,
@@ -353,36 +357,68 @@ async def _heartbeat_due(db: AsyncIOMotorDatabase, pid: int, now: datetime) -> b
 
 async def _write_devlogs(
     db: AsyncIOMotorDatabase, devlogs: list[dict[str, Any]], now: datetime
-) -> int:
-    """Write the cards, flagging the threads whose comment counter has moved."""
+) -> dict[str, int]:
+    """Write the cards, flagging moved threads and snapshotting moved numbers."""
     if not devlogs:
-        return 0
+        return {"flagged": 0, "snapshots": 0}
 
     ids = [d["_id"] for d in devlogs]
-    watermarks = {
-        row["_id"]: row.get("comments_crawled_count")
-        async for row in db.devlogs.find(
-            {"_id": {"$in": ids}}, {"comments_crawled_count": 1}
-        )
+    projection = {"comments_crawled_count": 1, "snapshot_at": 1}
+    projection.update(dict.fromkeys(DEVLOG_TRACKED, 1))
+    previous = {
+        row["_id"]: row
+        async for row in db.devlogs.find({"_id": {"$in": ids}}, projection)
     }
 
+    # One cutoff for the batch, so the heartbeat costs no query per card.
+    cutoff = now - timedelta(hours=settings.snapshot_heartbeat_hours)
     ops = []
+    points = []
     flagged = 0
     for d in devlogs:
         doc = dict(d)
         doc["username_lower"] = (doc.get("username") or "").lower() or None
         doc["last_crawled"] = now
+        was = previous.get(doc["_id"])
         # Worth a fetch when there is a thread to read, or there was one whose
         # rows now need retiring.
         count = doc.get("comments") or 0
-        was = watermarks.get(doc["_id"])
-        stale = count != was and bool(count or was)
+        watermark = (was or {}).get("comments_crawled_count")
+        stale = count != watermark and bool(count or watermark)
         doc["comments_stale"] = stale
         flagged += stale
+
+        if _devlog_snapshot_due(was, doc, cutoff):
+            doc["snapshot_at"] = now
+            points.append(_devlog_snapshot(doc["_id"], doc, now))
+
         ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
 
     await db.devlogs.bulk_write(ops, ordered=False)
-    return flagged
+    if points:
+        await db.devlog_snapshots.insert_many(points, ordered=False)
+    return {"flagged": flagged, "snapshots": len(points)}
+
+
+def _devlog_snapshot_due(
+    previous: dict[str, Any] | None, doc: dict[str, Any], cutoff: datetime
+) -> bool:
+    """First sighting, a tracked number moving, or the heartbeat coming due."""
+    if previous is None:
+        return True
+    if any(doc.get(field) != previous.get(field) for field in DEVLOG_TRACKED):
+        return True
+    stamped = previous.get("snapshot_at")
+    return stamped is None or stamped <= cutoff
+
+
+def _devlog_snapshot(did: int, doc: dict[str, Any], ts: datetime) -> dict[str, Any]:
+    point: dict[str, Any] = {"ts": ts, "did": did}
+    for field in DEVLOG_TRACKED:
+        value = doc.get(field)
+        if value is not None:
+            point[field] = value
+    return point
 
 
 async def _write_ships(

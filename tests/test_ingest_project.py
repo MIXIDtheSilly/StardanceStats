@@ -6,7 +6,10 @@ from pathlib import Path
 import pytest
 
 from src.ingest.project import (
+    DEVLOG_TRACKED,
     _day_range,
+    _devlog_snapshot,
+    _devlog_snapshot_due,
     build_stats,
     check_anomalies,
     estimate_unpaid,
@@ -173,3 +176,37 @@ def test_day_range_is_inclusive_and_utc_midnight():
 def test_day_range_single_day():
     day = datetime(2026, 8, 3, 12, tzinfo=UTC)
     assert _day_range(day, day + timedelta(hours=1)) == [datetime(2026, 8, 3, tzinfo=UTC)]
+
+
+NOW = datetime(2026, 8, 10, 12, tzinfo=UTC)
+CUTOFF = NOW - timedelta(hours=24)
+
+
+def test_a_devlog_we_have_never_seen_is_snapshotted():
+    assert _devlog_snapshot_due(None, {"likes": 0}, CUTOFF)
+
+
+def test_a_moved_number_is_snapshotted():
+    previous = {"likes": 3, "snapshot_at": NOW}
+    assert _devlog_snapshot_due(previous, {"likes": 4}, CUTOFF)
+
+
+def test_a_still_devlog_inside_the_heartbeat_is_not_snapshotted():
+    previous = {field: 1 for field in DEVLOG_TRACKED} | {"snapshot_at": NOW}
+    assert not _devlog_snapshot_due(previous, dict(previous), CUTOFF)
+
+
+def test_the_heartbeat_snapshots_a_devlog_that_never_moves():
+    previous = {field: 1 for field in DEVLOG_TRACKED}
+    previous["snapshot_at"] = CUTOFF - timedelta(minutes=1)
+    assert _devlog_snapshot_due(previous, {field: 1 for field in DEVLOG_TRACKED}, CUTOFF)
+
+
+def test_a_devlog_stamped_before_the_writer_existed_is_snapshotted():
+    previous = {field: 1 for field in DEVLOG_TRACKED}
+    assert _devlog_snapshot_due(previous, dict(previous), CUTOFF)
+
+
+def test_a_snapshot_carries_the_meta_field_and_drops_unknowns():
+    point = _devlog_snapshot(7, {"likes": 2, "views": None, "body_preview": "x"}, NOW)
+    assert point == {"ts": NOW, "did": 7, "likes": 2}

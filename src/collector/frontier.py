@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Sequence
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import UpdateOne
@@ -40,6 +40,7 @@ async def due(
     db: AsyncIOMotorDatabase,
     *,
     kind: str | None = None,
+    exclude: Sequence[str] | None = None,
     limit: int = 50,
     now: datetime | None = None,
 ) -> list[dict[str, Any]]:
@@ -51,6 +52,10 @@ async def due(
     }
     if kind:
         query["kind"] = kind
+    elif exclude:
+        # A residual filter on the (priority, next_due) index, so the scan
+        # stays in sort order instead of collecting and sorting in memory.
+        query["kind"] = {"$nin": list(exclude)}
 
     cursor = db.crawl_frontier.find(
         query, projection={"kind": 1, "ref_id": 1, "url": 1, "tier": 1, "parent_id": 1}

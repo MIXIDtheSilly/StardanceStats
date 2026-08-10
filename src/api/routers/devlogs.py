@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..deps import db as db_dep
 from ..services import stamp
+from ..services.history import HistoryError, Interval, bucketed_series, parse_metrics
 
 router = APIRouter()
 
@@ -15,7 +17,7 @@ router = APIRouter()
 async def get_devlog(
     devlog_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
-    """One devlog. History per devlog is not kept; see /v1/meta."""
+    """One devlog as we last read it; see /devlogs/{id}/history for its series."""
     doc = await db.devlogs.find_one({"_id": devlog_id})
     if not doc:
         raise HTTPException(404, f"devlog {devlog_id} not tracked")
@@ -54,3 +56,44 @@ async def get_devlog_comments(
         },
         devlog.get("comments_crawled_at"),
     )
+
+
+@router.get("/devlogs/{devlog_id}/history")
+async def get_devlog_history(
+    devlog_id: int,
+    metrics: str = Query(
+        "likes,comments,views",
+        description="Comma-separated metric names; see /v1/meta.",
+    ),
+    interval: Interval = "1d",
+    start: datetime | None = None,
+    end: datetime | None = None,
+    delta: bool = Query(True, description="Include per-bucket change."),
+    fill: Literal["none", "locf"] = Query(
+        "none", description="locf carries the last observation into empty buckets."
+    ),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
+    """Bucketed engagement series, reporting the last observation per bucket."""
+    devlog = await db.devlogs.find_one(
+        {"_id": devlog_id},
+        projection={"project_id": 1, "username": 1, "posted_at": 1, "last_crawled": 1},
+    )
+    if not devlog:
+        raise HTTPException(404, f"devlog {devlog_id} not tracked")
+
+    try:
+        requested = parse_metrics("devlog", metrics)
+        result = await bucketed_series(
+            db, "devlog", devlog_id,
+            metrics=requested, interval=interval, start=start, end=end,
+            delta=delta, fill=fill,
+        )
+    except HistoryError as exc:
+        raise HTTPException(400, str(exc)) from exc
+
+    result["entity"] = {
+        "type": "devlog", "id": devlog_id, "project_id": devlog.get("project_id"),
+        "author": devlog.get("username"), "posted_at": devlog.get("posted_at"),
+    }
+    return stamp(result, devlog.get("last_crawled"))

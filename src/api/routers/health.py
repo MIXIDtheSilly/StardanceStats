@@ -77,6 +77,7 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "shop_items": await db.shop_items.count_documents({"gone": {"$ne": True}}),
             "shop_snapshots": await db.shop_snapshots.count_documents({}),
             "project_snapshots": await db.project_snapshots.count_documents({}),
+            "devlog_snapshots": await db.devlog_snapshots.count_documents({}),
             "user_snapshots": await db.user_snapshots.count_documents({}),
             "global_snapshots": await db.global_snapshots.count_documents({}),
         },
@@ -111,8 +112,8 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "leaderboard, which is opt-in and ranks on stale approx_ columns.",
             "ship_stardust counts ship payouts only, and is a lower bound until every "
             "one of a user's projects has been crawled. See coverage.complete.",
-            "Devlogs carry current engagement figures but no history of their own; "
-            "their likes and comments are tracked in the project's totals.",
+            "Devlog history starts when we first crawled the card, not when the "
+            "devlog was posted, so its early engagement is not recoverable.",
             "Comments are read one thread at a time, queued when a devlog's counter "
             "moves, so comments_sent trails comments_received until the queue drains. "
             "Threads never render deleted comments or banned authors, and those stay "

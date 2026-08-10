@@ -4,7 +4,7 @@ import asyncio
 import logging
 import signal
 import time
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -36,6 +36,13 @@ OWNER_RESOLVE_LIMIT = 100
 
 # How far past the highest id known to be real the scan keeps probing.
 ID_SCAN_MARGIN = 1000
+
+# Threads run in their own lane. Sharing one would starve them: they are queued
+# at priority 1 with next_due=now, so they sort behind every overdue page.
+THREAD_KINDS = ("devlog",)
+
+# Big enough to amortise the round trip, small enough to report progress often.
+THREAD_PAGE = 500
 
 
 async def crawl_one(
@@ -134,11 +141,12 @@ async def crawl_batch(
     fetcher: Fetcher,
     *,
     kind: str | None = None,
+    exclude: Sequence[str] | None = None,
     limit: int | None = None,
 ) -> dict[str, Any]:
     """Take one batch of due rows off the frontier and crawl it."""
     limit = limit or settings.crawl_batch_size
-    rows = await frontier.due(db, kind=kind, limit=limit)
+    rows = await frontier.due(db, kind=kind, exclude=exclude, limit=limit)
     if not rows:
         return {"crawled": 0, "statuses": {}}
 
@@ -146,18 +154,25 @@ async def crawl_batch(
     result = await crawl_rows(db, fetcher, rows)
     elapsed = time.monotonic() - started
     log.info(
-        "batch: %d crawled in %.1fs (%.2f/s) %s",
-        result["crawled"], elapsed,
+        "%s batch: %d crawled in %.1fs (%.2f/s) %s",
+        kind or "page", result["crawled"], elapsed,
         result["crawled"] / elapsed if elapsed else 0.0, result["statuses"],
     )
     return result
 
 
-async def crawl_loop(db: AsyncIOMotorDatabase, fetcher: Fetcher, stop: asyncio.Event) -> None:
-    """Drain the frontier continuously, idling when nothing is due."""
+async def crawl_loop(
+    db: AsyncIOMotorDatabase,
+    fetcher: Fetcher,
+    stop: asyncio.Event,
+    *,
+    kind: str | None = None,
+    exclude: Sequence[str] | None = None,
+) -> None:
+    """Drain one lane of the frontier continuously, idling when nothing is due."""
     while not stop.is_set():
         try:
-            batch = await crawl_batch(db, fetcher)
+            batch = await crawl_batch(db, fetcher, kind=kind, exclude=exclude)
         except Exception:
             log.exception("crawl batch failed; backing off")
             batch = {"crawled": 0}
@@ -167,6 +182,81 @@ async def crawl_loop(db: AsyncIOMotorDatabase, fetcher: Fetcher, stop: asyncio.E
                 await asyncio.wait_for(stop.wait(), timeout=settings.crawl_idle_seconds)
             except asyncio.TimeoutError:
                 pass
+
+
+def _thread_query(only_new: bool, after: int | None) -> dict[str, Any]:
+    """Threads worth reading. Without a project there is no url to fetch."""
+    query: dict[str, Any] = {"gone": {"$ne": True}, "project_id": {"$ne": None}}
+    if only_new:
+        # Matches missing as well as null, so threads never read are included.
+        query["comments_crawled_at"] = None
+    if after is not None:
+        query["_id"] = {"$gt": after}
+    return query
+
+
+async def pending_threads(
+    db: AsyncIOMotorDatabase, *, only_new: bool = True, after: int | None = None
+) -> int:
+    return await db.devlogs.count_documents(_thread_query(only_new, after))
+
+
+async def backfill_threads(
+    db: AsyncIOMotorDatabase,
+    fetcher: Fetcher,
+    *,
+    only_new: bool = True,
+    limit: int | None = None,
+    concurrency: int | None = None,
+    after: int | None = None,
+) -> dict[str, Any]:
+    """Read threads straight from `devlogs`, ignoring the frontier's ordering."""
+    done = 0
+    statuses: dict[str, int] = {}
+
+    while limit is None or done < limit:
+        size = THREAD_PAGE if limit is None else min(THREAD_PAGE, limit - done)
+        # Paging by id survives a sweep longer than a cursor would live.
+        cursor = (
+            db.devlogs.find(_thread_query(only_new, after), {"project_id": 1})
+            .sort("_id", 1)
+            .limit(size)
+        )
+        rows = [row async for row in cursor]
+        if not rows:
+            break
+        after = rows[-1]["_id"]
+
+        result = await crawl_rows(
+            db,
+            fetcher,
+            [
+                {"kind": "devlog", "ref_id": r["_id"], "parent_id": r["project_id"]}
+                for r in rows
+            ],
+            concurrency=concurrency,
+        )
+        done += result["crawled"]
+        for status, count in result["statuses"].items():
+            statuses[status] = statuses.get(status, 0) + count
+        log.info("backfill: %d thread(s) read, through devlog %s", done, after)
+
+        if result.get("stopped") == "circuit_open":
+            log.error("circuit open, stopping the backfill after devlog %s", after)
+            break
+
+    return {"threads": done, "statuses": statuses, "last_id": after}
+
+
+async def run_backfill(db: AsyncIOMotorDatabase, fetcher: Fetcher) -> None:
+    """The one-off sweep, running beside the lanes rather than delaying them."""
+    log.info("backfill: %d thread(s) never read", await pending_threads(db))
+    try:
+        log.info("backfill finished: %s", await backfill_threads(db, fetcher))
+    except asyncio.CancelledError:
+        raise
+    except Exception:
+        log.exception("backfill failed")
 
 
 async def extend_scan(db: AsyncIOMotorDatabase) -> dict[str, Any]:
@@ -273,16 +363,20 @@ async def main() -> None:
         depth = await frontier.queue_depth(db)
         log.info("collector started at %s; frontier %s", utcnow().isoformat(), depth)
 
-        worker = asyncio.create_task(crawl_loop(db, fetcher, stop))
+        workers = [
+            asyncio.create_task(crawl_loop(db, fetcher, stop, exclude=THREAD_KINDS)),
+            asyncio.create_task(crawl_loop(db, fetcher, stop, kind="devlog")),
+        ]
+        if settings.backfill_comments:
+            workers.append(asyncio.create_task(run_backfill(db, fetcher)))
+
         await stop.wait()
 
         log.info("shutting down")
         scheduler.shutdown(wait=False)
-        worker.cancel()
-        try:
-            await worker
-        except asyncio.CancelledError:
-            pass
+        for worker in workers:
+            worker.cancel()
+        await asyncio.gather(*workers, return_exceptions=True)
 
     await database.close()
 
