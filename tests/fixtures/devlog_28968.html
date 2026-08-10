@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Devlog by @The_Craw - Stardance</title>
+    <link rel="icon" type="image/png" href="https://stardance.hackclub.com/assets/favicon-cdc48065.png" />
+    <link rel="apple-touch-icon" type="image/png" href="https://stardance.hackclub.com/apple-touch-icon.png" sizes="180x180" />
+    <meta name="apple-mobile-web-app-title" content="Stardance">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta property="og:type" content="website">
+    <meta name="twitter:site" content="@hackclub">
+    <meta name="twitter:creator" content="@hackclub">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:site_name" content="Stardance - Hack Club">
+    <meta name="theme-color" content="#FFE564">
+
+
+    <meta name="description" content="icl I&#39;ve not done much today, mostly testing the allocation code and it looks up to spec tbh, not much to say ">
+    <meta property="og:title" content="@The_Craw on Crawssembly | Stardance">
+    <meta property="og:description" content="icl I&#39;ve not done much today, mostly testing the allocation code and it looks up to spec tbh, not much to say ">
+    <meta property="og:url" content="https://stardance.hackclub.com/projects/8100/devlogs/28968">
+    <meta property="og:image" content="/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MjAwOTU3LCJwdXIiOiJibG9iX2lkIn19--40c2f74398476b16d79b1208220ff95c2f411c98/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/this-squad-jumps-20-fingers-sukuna-who-has-kamutoke-they-v0-qs2e16opjwdg1.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@The_Craw on Crawssembly | Stardance">
+    <meta name="twitter:description" content="icl I&#39;ve not done much today, mostly testing the allocation code and it looks up to spec tbh, not much to say ">
+    <meta name="twitter:image" content="/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MjAwOTU3LCJwdXIiOiJibG9iX2lkIn19--40c2f74398476b16d79b1208220ff95c2f411c98/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/this-squad-jumps-20-fingers-sukuna-who-has-kamutoke-they-v0-qs2e16opjwdg1.png">
+    
+
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="9UR1gNAlx6rcAtHfVXc-jGWcO-972kP7uHkbv94-8P2qb5mPwO4UR7sST5o8MMRDxmNCVD2kY_gK7WM7hei8pA" />
+    
+    <meta name="turbo-prefetch" content="false">
+    
+
+    
+    <link rel="preload" href="https://stardance.hackclub.com/assets/Roboto-804fdbde.ttf" as="font" type="font/ttf" crossorigin="anonymous">
+
+    
+      <script>
+    window['_fs_host'] = 'fullstory.com';
+    window['_fs_script'] = 'edge.fullstory.com/s/fs.js';
+    window['_fs_org'] = 'ARN0J';
+    window['_fs_namespace'] = 'FS';
+    (function(m,n,e,t,l,o,g,y){
+      if (e in m) { if (m.console && m.console.log) { m.console.log('FullStory namespace conflict. Please set window["_fs_namespace"].'); } return; }
+      g=m[e]=function(a,b,s){g.q?g.q.push([a,b,s]):g._api(a,b,s);};g.q=[];
+      o=n.createElement(t);o.async=1;o.crossOrigin='anonymous';o.src='https://'+_fs_script;
+      y=n.getElementsByTagName(t)[0];y.parentNode.insertBefore(o,y);
+      g.identify=function(i,v,s){g(l,{uid:i},s);if(v)g(l,v,s)};
+      g.setUserVars=function(v,s){g(l,v,s)};
+      g.event=function(i,v,s){g('event',{n:i,p:v},s)};
+      g.anonymize=function(){g.identify(!!0)};
+      g.shutdown=function(){g("rec",!1)};
+      g.restart=function(){g("rec",!0)};
+      g.log=function(a,b){g("log",[a,b])};
+      g.consent=function(a){g("consent",!arguments.length||a)};
+      g.identifyAccount=function(i,v){o='account';v=v||{};v.acctId=i;g(o,v)};
+      g.clearUserCookie=function(){};
+      g.setVars=function(n,p){g('setVars',[n,p]);};
+      g._hierarchyRecordingEnabled=true;
+      g._hierarchyDefaultRegion='main';
+    })(window,document,window['_fs_namespace'],'script','user');
+  </script>
+
+
+    
+    <link rel="stylesheet" href="https://stardance.hackclub.com/assets/application-092f2515.css" data-turbo-track="reload" />
+      <script async src="https://plausible.io/js/pa-8UNXJ41xxW9knU4pKr95g.js"></script>
+      <script>
+        window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+        plausible.init()
+      </script>
+      <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18182651878"></script>
+      <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'AW-18182651878');
+      </script>
+    <script src="https://stardance.hackclub.com/assets/application-7b8e6541.js" data-turbo-track="reload" type="module"></script>
+    <meta name="sentry-trace" content="0f61dde01146404c8ca920aacf1324eb-f75d94e387b64847-1">
+<meta name="baggage" content="sentry-trace_id=0f61dde01146404c8ca920aacf1324eb,sentry-sample_rate=1.0,sentry-sample_rand=0.929123,sentry-sampled=true,sentry-environment=production,sentry-public_key=128c1f8988d2f77be887915507fa1e06,sentry-org_id=40609"> 
+  </head>
+
+  <body class="signed-in app-layout-page ">
+      <div class="app-loading" aria-hidden="true">
+        <div class="app-loading__inner">
+          <img alt="" class="app-loading__logo" src="https://stardance.hackclub.com/assets/landing/header/stardance-logo-df399a7f.png" />
+          <span class="app-loading__spinner"></span>
+        </div>
+      </div>
+    <div class="top-banners">
+    </div>
+      <aside class="sidebar"
+       id="primary-nav"
+       data-controller="sidebar-active nav-history"
+       data-turbo-permanent
+       aria-label="Main">
+  <a class="sidebar__logo" aria-label="Stardance home" data-turbo="true" href="/">
+    <img alt="Hack Club Stardance Challenge" class="sidebar__logo-img" src="https://stardance.hackclub.com/assets/landing/header/stardance-logo-df399a7f.png" />
+</a>
+  <nav class="sidebar__nav" aria-label="Primary navigation">
+    <ul class="sidebar__nav-list">
+
+        <li class="sidebar__nav-item" data-onboarding-target="home">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="home" href="/home">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/rocket-ae0562a3.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/rocket_active-fe1cbdba.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">home</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="rate">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="rate" href="/rate/new">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/box-78dc97de.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/box_active-09267c74.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">rate</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="missions">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="missions" href="/missions">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/calendar-0946a93c.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/calendar_active-f0f440ea.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">missions</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="shop">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="shop" href="/shop">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/cart-e343ed9d.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/cart_active-5d9284ca.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">shop</span>
+
+</a>        </li>
+
+        <li class="sidebar__nav-item" data-onboarding-target="resources">
+
+
+            <a class="sidebar__nav-link" data-turbo="true" data-slug="resources" href="/resources">
+                          <span class="sidebar__nav-icon-wrapper" aria-hidden="true">
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--idle" src="https://stardance.hackclub.com/assets/icons/book-cf3c9ead.png" />
+                <img alt="" class="sidebar__nav-icon sidebar__nav-icon--active" src="https://stardance.hackclub.com/assets/icons/book_active-38491ddd.png" />
+            </span>
+
+                          <span class="sidebar__nav-label">resources</span>
+
+</a>        </li>
+    </ul>
+  </nav>
+
+  <div class="sidebar__user" aria-live="polite">
+      <div class="sidebar__guest-cta">
+        <a class="sidebar__guest-cta-btn" href="/">Sign up</a>
+      </div>
+  </div>
+
+</aside>
+
+    <div id="flash-region">
+</div>
+    <div class="guest-banner" role="status">
+    <p class="guest-banner__copy">
+      You are browsing as a guest.
+      <a class="guest-banner__link" href="/">Sign up</a>
+      (or <a class="guest-banner__link" href="/">log in</a>) to start making projects!
+    </p>
+</div>
+
+
+<div class="app-layout">
+  <main class="app-layout__main devlog-detail" aria-label="Devlog">
+    
+    <nav class="devlog-detail__back" aria-label="Back">
+      <a class="devlog-detail__back-link" href="/projects/8100">
+        <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 32 32" role="img" class="devlog-detail__back-arrow"><path fill="currentColor" fill-rule="evenodd" d="M4.94 10.94a1.5 1.5 0 0 1 2.12 0L16 19.878l8.94-8.94a1.5 1.5 0 0 1 2.12 2.122l-10 10a1.5 1.5 0 0 1-2.12 0l-10-10a1.5 1.5 0 0 1 0-2.122" clip-rule="evenodd"></path></svg>
+        <span>Back to Crawssembly</span>
+</a>    </nav>
+
+    <div class="devlog-detail__thread">
+      <article class="devlog-detail__post">
+        
+  <article id="post_34296" class="feed-post-card feed-post-card--feed">
+
+
+
+  <header class="feed-post-card__header">
+        <a class="feed-post-card__avatar-link" aria-label="@The_Craw" href="/@The_Craw">
+          <img alt="" class="feed-post-card__avatar" src="https://cachet.dunkirk.sh/users/U0B8JV1RZB8/r" />
+</a>
+    <div class="feed-post-card__meta">
+      <p class="feed-post-card__byline">
+          <a class="feed-post-card__author" href="/@The_Craw">@The_Craw</a>
+
+
+          <span class="feed-post-card__context">on</span>
+          <a class="feed-post-card__project" href="/projects/8100">Crawssembly</a>
+
+        <time class="feed-post-card__time" datetime="2026-07-24T21:36:54Z" title="July 24, 2026 21:36">
+          · 16 days ago
+        </time>
+
+      </p>
+
+        <p class="feed-post-card__duration">30m 18s logged</p>
+
+    </div>
+  </header>
+
+
+    
+      <div class="feed-post-card__body markdown-content">
+        <p>icl I’ve not done much today, mostly testing the allocation code and it looks up to spec tbh, not much to say</p>
+
+      </div>
+
+    <div class="feed-post-card__media "
+>
+    <div class="feed-post-card__media-stage">
+      <div class="feed-post-card__media-viewport" >
+          <figure class="feed-post-card__media-slide ">
+              <img alt="" class="feed-post-card__image" src="https://stardance.hackclub.com/rails/active_storage/representations/proxy/eyJfcmFpbHMiOnsiZGF0YSI6MjAwOTU3LCJwdXIiOiJibG9iX2lkIn19--40c2f74398476b16d79b1208220ff95c2f411c98/eyJfcmFpbHMiOnsiZGF0YSI6eyJmb3JtYXQiOiJ3ZWJwIiwicmVzaXplX3RvX2xpbWl0IjpbMTYwMCw5MDBdLCJzYXZlciI6eyJzdHJpcCI6dHJ1ZSwicXVhbGl0eSI6NzV9fSwicHVyIjoidmFyaWF0aW9uIn19--5394ecd620f1b8ee9be71be3f37cd22b8a88953c/this-squad-jumps-20-fingers-sukuna-who-has-kamutoke-they-v0-qs2e16opjwdg1.png" />
+
+          </figure>
+      </div>
+    </div>
+  </div>
+
+
+
+  <footer class="feed-post-card__actions">
+
+        <div class="feed-post-card__repost">
+            <span class="feed-post-card__action feed-post-card__action--disabled" aria-label="Sign in to repost">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" class="feed-post-card__action-icon">
+<path d="M11.1338 27.6001H26.3338C28.4325 27.6001 30.1338 25.8987 30.1338 23.8001V22.5332" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M25.0669 7.33398L29.2379 11.505C29.7325 11.9996 29.7325 12.8017 29.2379 13.2963L25.0669 17.4673" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M14.9336 22.5332L10.7626 26.7042C10.2679 27.1988 10.2679 28.0009 10.7626 28.4955L14.9336 32.6665" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+<path d="M28.8667 12.4004H13.6667C11.568 12.4004 9.8667 14.1017 9.8667 16.2004V17.4671" stroke="white" stroke-width="3" stroke-linecap="round"></path>
+</svg>
+              <span>0</span>
+            </span>
+        </div>
+
+      <div class="feed-post-card__like">
+        
+<div id="like_button_post_devlog_28968" class="like-button">
+    <div class="like-button__btn like-button__btn--disabled">
+      <svg xmlns="http://www.w3.org/2000/svg" fill-rule="evenodd" clip-rule="evenodd" stroke-linejoin="round" stroke-miterlimit="1.414" aria-label="like" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="like-button__icon"><path d="M15.982 13.578l-1.414-1.414C12.876 10.473 11.364 10 10.232 10c-1.17 0-2.175.503-2.836 1.164-1.592 1.592-1.887 3.022-1.676 4.288.235 1.407 1.152 2.928 2.579 4.412 1.432 1.501 3.108 2.703 4.719 3.616.789.451 1.453.769 2.062 1.001.344.134.65.199.809.233l.093.02.092-.02c.159-.034.466-.099.81-.233.608-.232 1.273-.55 2.062-1.001 1.611-.913 3.287-2.115 4.719-3.616 1.427-1.484 2.344-3.005 2.578-4.412.211-1.266-.083-2.696-1.675-4.288A4.035 4.035 0 0 0 21.732 10c-1.132 0-2.644.473-4.336 2.164l-1.414 1.414zm0-2.828c4-4 8-3 10-1 8 8-7 17-10 17s-18-9-10-17c2-2 6-3 10 1z"></path></svg>
+      <span class="like-button__count">4</span>
+    </div>
+</div>
+
+      </div>
+
+      <span class="feed-post-card__action feed-post-card__action--disabled"
+            aria-label="Seen by 34 people"
+            title="Unique viewers">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="256" height="256" class="feed-post-card__action-icon"><path d="M4.5 16.4C8.3 11.7 11.8 10 16 10C20.2 10 23.7 11.7 27.5 16.4" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" fill="none"></path><circle cx="16" cy="19" r="4" stroke="currentColor" stroke-width="2.75" fill="none"></circle></svg>
+        <span>34</span>
+      </span>
+
+  </footer>
+</article>
+
+
+      </article>
+
+      <section class="devlog-detail__comments" id="comments">
+  <header class="devlog-detail__comments-header">
+    <h3 class="devlog-detail__comments-heading">
+      Comments
+      <span class="devlog-detail__comments-count" id="comments_count_post_devlog_28968">5</span>
+    </h3>
+  </header>
+
+  <div class="devlog-detail__comments-list">
+      <div id="comment_5110" class="devlog-comment">
+  <div class="devlog-comment__header">
+    <a class="devlog-comment__avatar-link" href="/@water">
+      <img alt="" class="devlog-comment__avatar" src="https://cachet.dunkirk.sh/users/U0AEW562M37/r" />
+</a>    <div class="devlog-comment__meta">
+      <a class="devlog-comment__author" href="/@water">@water</a><span class="streak-badge"
+      aria-label="24-day streak"
+      data-controller="tooltip"
+      data-tooltip-message-value="24-day streak"
+      data-tooltip-position-value="top">
+  <img alt="" class="streak-badge__icon" src="https://stardance.hackclub.com/assets/streak/10day-0031ecbd.png" />
+</span>
+
+
+      <time class="devlog-comment__time" datetime="2026-07-24T23:21:23Z">
+        · 16 days ago
+      </time>
+    </div>
+  </div>
+  <div class="devlog-comment__body"><p>this is NOT how to devlog brotato</p>
+</div>
+</div>
+<div id="comment_5267" class="devlog-comment">
+  <div class="devlog-comment__header">
+    <a class="devlog-comment__avatar-link" href="/@PAPER_01">
+      <img alt="" class="devlog-comment__avatar" src="https://cachet.dunkirk.sh/users/U09H2FWMR2L/r" />
+</a>    <div class="devlog-comment__meta">
+      <a class="devlog-comment__author" href="/@PAPER_01">@PAPER_01</a>
+
+      <time class="devlog-comment__time" datetime="2026-07-25T05:14:17Z">
+        · 15 days ago
+      </time>
+    </div>
+  </div>
+  <div class="devlog-comment__body"><p>(ᵕ—ᴗ—)</p>
+</div>
+</div>
+<div id="comment_5322" class="devlog-comment">
+  <div class="devlog-comment__header">
+    <a class="devlog-comment__avatar-link" href="/@The_Craw">
+      <img alt="" class="devlog-comment__avatar" src="https://cachet.dunkirk.sh/users/U0B8JV1RZB8/r" />
+</a>    <div class="devlog-comment__meta">
+      <a class="devlog-comment__author" href="/@The_Craw">@The_Craw</a>
+
+      <time class="devlog-comment__time" datetime="2026-07-25T13:19:17Z">
+        · 15 days ago
+      </time>
+    </div>
+  </div>
+  <div class="devlog-comment__body"><p>You can’t expect progress all the time 😭</p>
+</div>
+</div>
+<div id="comment_5323" class="devlog-comment">
+  <div class="devlog-comment__header">
+    <a class="devlog-comment__avatar-link" href="/@The_Craw">
+      <img alt="" class="devlog-comment__avatar" src="https://cachet.dunkirk.sh/users/U0B8JV1RZB8/r" />
+</a>    <div class="devlog-comment__meta">
+      <a class="devlog-comment__author" href="/@The_Craw">@The_Craw</a>
+
+      <time class="devlog-comment__time" datetime="2026-07-25T13:19:34Z">
+        · 15 days ago
+      </time>
+    </div>
+  </div>
+  <div class="devlog-comment__body"><p>Also idk what that means <a href="/@PAPER_01" class="mention">@PAPER_01</a></p>
+</div>
+</div>
+<div id="comment_5331" class="devlog-comment">
+  <div class="devlog-comment__header">
+    <a class="devlog-comment__avatar-link" href="/@PAPER_01">
+      <img alt="" class="devlog-comment__avatar" src="https://cachet.dunkirk.sh/users/U09H2FWMR2L/r" />
+</a>    <div class="devlog-comment__meta">
+      <a class="devlog-comment__author" href="/@PAPER_01">@PAPER_01</a>
+
+      <time class="devlog-comment__time" datetime="2026-07-25T13:45:46Z">
+        · 15 days ago
+      </time>
+    </div>
+  </div>
+  <div class="devlog-comment__body"><p>thats nothing more then my reaction after reading this devlog , dont worry about it</p>
+</div>
+</div>
+
+  </div>
+
+    <p class="devlog-detail__sign-in">
+      <a href="/">Sign in</a> to join the conversation.
+    </p>
+</section>
+
+    </div>
+  </main>
+
+  <aside class="discover-rail"
+       aria-label="Discover"
+       data-controller="discover-rail-search"
+       data-discover-rail-search-url-value="/search/global">
+  <div class="discover-rail__search">
+    <input type="search"
+           class="discover-rail__search-input"
+           placeholder="Search…"
+           aria-label="Search"
+           autocomplete="off"
+           data-discover-rail-search-target="input"
+           data-action="input->discover-rail-search#search">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none" color="white" class="discover-rail__search-icon">
+<g clip-path="url(#clip0_1820_4483)">
+<path d="M39.0527 34.2126L29.8565 25.0156C31.419 22.5281 32.3258 19.5879 32.3258 16.4326C32.3258 7.50574 25.0891 0.27002 16.1626 0.27002C7.23605 0.27002 0 7.50574 0 16.4326C0 25.3598 7.23571 32.5948 16.1626 32.5948C19.5964 32.5948 22.777 31.5213 25.3942 29.6971L34.481 38.7846C35.1124 39.4154 35.9402 39.7295 36.7669 39.7295C37.5946 39.7295 38.4213 39.4154 39.0537 38.7846C40.3155 37.5215 40.3155 35.4754 39.0527 34.2126ZM16.1626 27.3584C10.1291 27.3584 5.23745 22.4671 5.23745 16.4333C5.23745 10.3994 10.1291 5.50781 16.1626 5.50781C22.1964 5.50781 27.0877 10.3994 27.0877 16.4333C27.0877 22.4671 22.1964 27.3584 16.1626 27.3584Z" fill="currentColor"></path>
+</g>
+<defs>
+<clipPath id="clip0_1820_4483">
+<rect width="40" height="40" fill="white"></rect>
+</clipPath>
+</defs>
+</svg>
+    <button type="button"
+            class="discover-rail__search-clear"
+            aria-label="Clear search"
+            data-discover-rail-search-target="clearButton"
+            data-action="discover-rail-search#clear"
+            hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" id="Capa_1" enable-background="new 0 0 320.591 320.591" height="512" viewBox="0 0 320.591 320.591" width="512" fill="currentColor" class="discover-rail__search-clear-icon"><g><g id="close_1_"><path d="m30.391 318.583c-7.86.457-15.59-2.156-21.56-7.288-11.774-11.844-11.774-30.973 0-42.817l257.812-257.813c12.246-11.459 31.462-10.822 42.921 1.424 10.362 11.074 10.966 28.095 1.414 39.875l-259.331 259.331c-5.893 5.058-13.499 7.666-21.256 7.288z"></path><path d="m287.9 318.583c-7.966-.034-15.601-3.196-21.257-8.806l-257.813-257.814c-10.908-12.738-9.425-31.908 3.313-42.817 11.369-9.736 28.136-9.736 39.504 0l259.331 257.813c12.243 11.462 12.876 30.679 1.414 42.922-.456.487-.927.958-1.414 1.414-6.35 5.522-14.707 8.161-23.078 7.288z"></path></g></g></svg>
+    </button>
+  </div>
+
+  <turbo-frame id="discover-rail-results" data-discover-rail-search-target="results" hidden></turbo-frame>
+
+  <div class="discover-rail__widgets" data-discover-rail-search-target="widgets">
+  </div>
+</aside>
+
+</div>
+
+    
+    
+    <dialog class="post-panel" aria-label="Post"
+        data-controller="post-panel"
+        data-post-panel-target="dialog"
+        data-action="card-link:navigate@window->post-panel#open pointerdown->post-panel#trackPress click->post-panel#backdropClick">
+  <div class="post-panel__content">
+    <header class="post-panel__header">
+      <button type="button" class="post-panel__close" data-action="post-panel#close" aria-label="Close">&times;</button>
+    </header>
+    <div class="post-panel__body">
+      <div class="devlog-detail__post" data-post-panel-target="cardSlot"></div>
+      <turbo-frame data-post-panel-target="frame" data-action="turbo:before-frame-render-&gt;post-panel#clearPlaceholder turbo:frame-load-&gt;post-panel#frameLoaded turbo:submit-end-&gt;post-panel#frameSubmitted" id="post-panel-comments" target="_top">
+        <div class="post-panel__loading">
+          <span class="feed-loading__spinner" aria-hidden="true"></span>
+        </div>
+</turbo-frame>    </div>
+  </div>
+</dialog>
+
+    
+      <footer class="dev-footer">
+        <p>
+          Build <a href="https://github.com/hackclub/stardance/commit/07ecd1015db69cff36d3042bc0b3c4e70b1fb8d4">07ecd101</a>
+          from 1 day ago.
+          (DB: 9 queries, 0 cached)
+          (CACHE: 12 hits, 0 misses)
+          (2.4 req/sec)
+          (Active: 142 signed in, 593 visitors)
+        </p>
+      </footer>
+  <script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"bff4c063e5be4ac1a18a3a5875ca9941"}' crossorigin="anonymous"></script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a288021e286fb235',t:'MTc4NjI5MTU4OA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

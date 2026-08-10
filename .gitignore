@@ -19,5 +19,3 @@ mine/
 # proxy lists, however the provider names the download
 proxies.txt
 *proxies*.txt
-
-tests/fixtures
