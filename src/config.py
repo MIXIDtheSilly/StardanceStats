@@ -81,6 +81,17 @@ class Settings(BaseSettings):
     # Quiet time, not crawl count, so a faster tier cannot demote sooner.
     cold_after_unchanged_hours: float = 30.0
 
+    # No ETag on the catalogue, so the interval is the whole cost control:
+    # 7 regions x ~220 KB a sweep.
+    crawl_shop: bool = True
+    shop_interval_minutes: int = 60
+
+    # One fetch per thread whose counter moved.
+    crawl_comments: bool = True
+    comment_queue_limit: int = 2000
+    # Only a backstop: the project page's counter is what queues a thread.
+    comment_recheck_hours: float = 24.0 * 14
+
     max_error_backoff_hours: float = 12.0
     crawl_batch_size: int = 50
     # 0 means two per route, so a route is not idle while its task parses.

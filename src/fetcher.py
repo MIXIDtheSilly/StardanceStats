@@ -4,8 +4,9 @@ import asyncio
 import logging
 import random
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, AsyncIterator
 from urllib.parse import urlsplit
 
 import httpx
@@ -87,6 +88,51 @@ class Endpoint:
 
     def available_at(self) -> float:
         return max(self.limiter.ready_at, self.disabled_until)
+
+
+class Session:
+    """A cookie-keeping conversation over one route, paced but not retried."""
+
+    def __init__(self, fetcher: Fetcher, endpoint: Endpoint, client: httpx.AsyncClient):
+        self._fetcher = fetcher
+        self._endpoint = endpoint
+        self._client = client
+
+    async def get(self, path: str, **kwargs: Any) -> FetchResult:
+        return await self._send("GET", path, **kwargs)
+
+    async def patch(
+        self, path: str, data: dict[str, str], *, headers: dict[str, str] | None = None
+    ) -> FetchResult:
+        return await self._send("PATCH", path, data=data, headers=headers)
+
+    async def _send(
+        self,
+        method: str,
+        path: str,
+        *,
+        data: dict[str, str] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> FetchResult:
+        await self._endpoint.limiter.acquire()
+        self._endpoint.requests += 1
+        url = self._fetcher._url(path)
+        try:
+            response = await self._client.request(
+                method, url, data=data, headers=headers or {}
+            )
+        except httpx.HTTPError as exc:
+            raise FetchError(f"{url}: {exc}") from exc
+
+        text = response.text if response.status_code < 400 else None
+        return FetchResult(
+            url=url,
+            status=response.status_code,
+            text=text,
+            etag=response.headers.get("ETag"),
+            last_modified=response.headers.get("Last-Modified"),
+            from_cache=False,
+        )
 
 
 class Fetcher:
@@ -203,6 +249,22 @@ class Fetcher:
             return path
         return f"{self.base_url}/{path.lstrip('/')}"
 
+    @asynccontextmanager
+    async def session(self) -> AsyncIterator[Session]:
+        """Borrow one route for a conversation with its own, discarded cookies."""
+        if not self._open:
+            raise FetchError("Fetcher used outside its async context manager")
+
+        # A preference left in a shared jar would re-answer every later crawl.
+        async with self._pick_lock:
+            endpoint = min(self._endpoints, key=lambda e: e.available_at())
+
+        client = self._new_client(endpoint)
+        try:
+            yield Session(self, endpoint, client)
+        finally:
+            await client.aclose()
+
     async def get(
         self,
         path: str,
@@ -211,6 +273,7 @@ class Fetcher:
         last_modified: str | None = None,
         max_bytes: int | None = None,
         accept: str | None = None,
+        cookies: dict[str, str] | None = None,
     ) -> FetchResult:
         if not self._open:
             raise FetchError("Fetcher used outside its async context manager")
@@ -238,7 +301,10 @@ class Fetcher:
 
             try:
                 async with self._semaphore:
-                    response = await endpoint.client.get(url, headers=headers)
+                    # Per request, not on the client: routes are shared.
+                    response = await endpoint.client.get(
+                        url, headers=headers, cookies=cookies
+                    )
             except httpx.HTTPError as exc:
                 # A dead or unauthenticated proxy surfaces here, not as a status.
                 last_exc = exc

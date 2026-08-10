@@ -58,6 +58,65 @@ async def get_project_devlogs(
     )
 
 
+@router.get("/projects/{project_id}/comments")
+async def get_project_comments(
+    project_id: int,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
+    """Every comment we have read across this project's devlogs, newest first."""
+    query = {"project_id": project_id, "gone": {"$ne": True}}
+    total = await db.comments.count_documents(query)
+    cursor = (
+        db.comments.find(query).sort([("posted_at", -1)]).skip(offset).limit(limit)
+    )
+
+    top = await db.comments.aggregate([
+        {"$match": query},
+        {"$group": {
+            "_id": "$username_lower",
+            "comments": {"$sum": 1},
+            "username": {"$last": "$username"},
+            "threads": {"$addToSet": "$devlog_id"},
+        }},
+        {"$project": {
+            "_id": 0, "username": 1, "comments": 1,
+            "threads": {"$size": "$threads"},
+        }},
+        {"$sort": {"comments": -1}},
+        {"$limit": 20},
+    ]).to_list(length=20)
+
+    # The counters say how many exist; our rows say how many we have read.
+    project = await db.projects.find_one({"_id": project_id}, {"stats.comments": 1})
+    return stamp(
+        {
+            "project_id": project_id,
+            "comments_count": ((project or {}).get("stats") or {}).get("comments"),
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "commenters": len(await db.comments.distinct("username_lower", query)),
+            "top_commenters": top,
+            "items": await cursor.to_list(length=limit),
+        },
+        await _threads_as_of(db, project_id),
+    )
+
+
+async def _threads_as_of(
+    db: AsyncIOMotorDatabase, project_id: int
+) -> datetime | None:
+    """Threads are crawled one page each, so the stalest one bounds the set."""
+    oldest = await db.devlogs.find_one(
+        {"project_id": project_id, "comments_crawled_at": {"$ne": None}},
+        {"comments_crawled_at": 1},
+        sort=[("comments_crawled_at", 1)],
+    )
+    return (oldest or {}).get("comments_crawled_at")
+
+
 @router.get("/projects/{project_id}/ships")
 async def get_project_ships(
     project_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)

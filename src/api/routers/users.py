@@ -22,6 +22,10 @@ LEADERBOARD_METRICS = {
     "paid_hours": "totals.paid_hours",
     "likes_received": "totals.likes_received",
     "comments_received": "totals.comments_received",
+    "comments_sent": "totals.comments_sent",
+    "comments_to_others": "totals.comments_to_others",
+    "comment_threads": "totals.comment_threads",
+    "projects_commented": "totals.projects_commented",
     "views_received": "totals.views_received",
     "best_multiplier": "totals.best_multiplier",
     "stardust_per_paid_hour": "totals.stardust_per_paid_hour",
@@ -31,6 +35,10 @@ LEADERBOARD_METRICS = {
     "ships": "stats.ships",
     "projects": "stats.projects",
 }
+
+def _oldest_crawl(rows: list[dict[str, Any]]) -> datetime | None:
+    return min((r["last_crawled"] for r in rows if r.get("last_crawled")), default=None)
+
 
 async def _find_user(db: AsyncIOMotorDatabase, ref: str) -> dict[str, Any]:
     """Look up by id or handle, including previous handles after a rename."""
@@ -99,6 +107,41 @@ async def get_user_devlogs(
             "items": await cursor.to_list(length=limit),
         },
         user.get("last_crawled"),
+    )
+
+
+@router.get("/users/{ref}/comments")
+async def get_user_comments(
+    ref: str,
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    sort: Literal["posted_at", "body_length"] = "posted_at",
+    include_self: bool = Query(True, description="Replies under their own devlogs."),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
+    """Comments this user has written, from the threads we have read."""
+    user = await _find_user(db, ref)
+    query: dict[str, Any] = {"user_id": user["_id"], "gone": {"$ne": True}}
+    if not include_self:
+        query["is_self"] = False
+
+    total = await db.comments.count_documents(query)
+    cursor = db.comments.find(query).sort([(sort, -1)]).skip(offset).limit(limit)
+    items = await cursor.to_list(length=limit)
+    totals = user.get("totals") or {}
+    return stamp(
+        {
+            "user_id": user["_id"],
+            "username": user["username"],
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            # Counted off the devlog counters, so it leads what we have read.
+            "comments_received": totals.get("comments_received"),
+            "items": items,
+        },
+        # Each row is as old as its thread's crawl; the oldest bounds the page.
+        _oldest_crawl(items),
     )
 
 

@@ -72,7 +72,10 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "projects": await db.projects.count_documents({}),
             "devlogs": await db.devlogs.count_documents({}),
             "ships": await db.ships.count_documents({}),
+            "comments": await db.comments.count_documents({"gone": {"$ne": True}}),
             "users": await db.users.count_documents({}),
+            "shop_items": await db.shop_items.count_documents({"gone": {"$ne": True}}),
+            "shop_snapshots": await db.shop_snapshots.count_documents({}),
             "project_snapshots": await db.project_snapshots.count_documents({}),
             "user_snapshots": await db.user_snapshots.count_documents({}),
             "global_snapshots": await db.global_snapshots.count_documents({}),
@@ -95,6 +98,10 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "projects_crawled": crawled["project"],
             "users_listed": listed["user"],
             "users_crawled": crawled["user"],
+            "threads_read": await db.devlogs.count_documents(
+                {"comments_crawled_at": {"$ne": None}}
+            ),
+            "threads_pending": await db.devlogs.count_documents({"comments_stale": True}),
         },
         "data_source": "public pages of stardance.hackclub.com",
         "caveats": [
@@ -106,7 +113,14 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             "one of a user's projects has been crawled. See coverage.complete.",
             "Devlogs carry current engagement figures but no history of their own; "
             "their likes and comments are tracked in the project's totals.",
+            "Comments are read one thread at a time, queued when a devlog's counter "
+            "moves, so comments_sent trails comments_received until the queue drains. "
+            "Threads never render deleted comments or banned authors, and those stay "
+            "in the counter, so a thread can hold fewer comments than it counts.",
             "Global history sums the rows we hold, so early growth is partly our own "
             "crawl catching up rather than the platform's.",
+            "Shop prices are per region and are read as a signed-out visitor. That is "
+            "the list price everyone pays, except on Outpost tickets, where a "
+            "per-user discount we cannot see is subtracted at checkout.",
         ],
     }

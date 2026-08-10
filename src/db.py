@@ -17,6 +17,7 @@ TIMESERIES: dict[str, tuple[str, str]] = {
     "user_snapshots": ("ts", "uid"),
     "project_snapshots": ("ts", "pid"),
     "devlog_snapshots": ("ts", "did"),
+    "shop_snapshots": ("ts", "sid"),
     "global_snapshots": ("ts", "scope"),
 }
 
@@ -86,12 +87,28 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
     await db.devlogs.create_index([("user_id", ASCENDING), ("posted_at", DESCENDING)])
     await db.devlogs.create_index([("username_lower", ASCENDING), ("posted_at", DESCENDING)])
     await db.devlogs.create_index([("likes", DESCENDING)])
+    # The comment sweep's only query.
+    await db.devlogs.create_index([("comments_stale", ASCENDING)], sparse=True)
+
+    await db.comments.create_index([("devlog_id", ASCENDING), ("position", ASCENDING)])
+    await db.comments.create_index([("user_id", ASCENDING), ("posted_at", DESCENDING)])
+    await db.comments.create_index(
+        [("username_lower", ASCENDING), ("posted_at", DESCENDING)]
+    )
+    await db.comments.create_index([("project_id", ASCENDING), ("posted_at", DESCENDING)])
+    await db.comments.create_index([("posted_at", DESCENDING)])
 
     await db.ships.create_index([("project_id", ASCENDING), ("ship_number", ASCENDING)])
     await db.ships.create_index([("username_lower", ASCENDING)])
     await db.ships.create_index([("shipped_at", DESCENDING)])
     await db.ships.create_index([("mission_slug", ASCENDING)], sparse=True)
     await db.ships.create_index([("payout_path", ASCENDING)], sparse=True)
+
+    await db.shop_items.create_index([("price_min", ASCENDING)])
+    await db.shop_items.create_index([("price_spread", DESCENDING)])
+    await db.shop_items.create_index([("regions", ASCENDING)])
+    await db.shop_items.create_index([("categories", ASCENDING)])
+    await db.shop_items.create_index([("on_sale", ASCENDING)], sparse=True)
 
     await db.missions.create_index([("payout_path", ASCENDING)])
     await db.missions.create_index([("last_crawled", ASCENDING)])

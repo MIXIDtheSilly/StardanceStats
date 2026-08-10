@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .. import __version__, db as database
 from ..config import settings
 from .middleware import cache_headers
-from .routers import devlogs, health, platform, projects, users
+from .routers import devlogs, health, platform, projects, shop, users
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)-7s %(name)s: %(message)s"
@@ -50,6 +50,7 @@ app.include_router(platform.router, prefix="/v1", tags=["global"])
 app.include_router(projects.router, prefix="/v1", tags=["projects"])
 app.include_router(devlogs.router, prefix="/v1", tags=["projects"])
 app.include_router(users.router, prefix="/v1", tags=["users"])
+app.include_router(shop.router, prefix="/v1", tags=["shop"])
 
 
 @app.get("/", include_in_schema=False)

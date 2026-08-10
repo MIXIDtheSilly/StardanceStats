@@ -101,7 +101,9 @@ async def test_ingest_links_id_onto_project_rows(db):
 
     summary = await craw(db)
     assert summary["linked"] == {
-        "projects_owned": 1, "projects_member": 1, "devlogs": 107, "ships": 2
+        "projects_owned": 1, "projects_member": 1, "devlogs": 107, "ships": 2,
+        # No thread of theirs has been read yet, so there is nothing to link.
+        "comments": 0,
     }
 
     project = await db.projects.find_one({"_id": 8100})

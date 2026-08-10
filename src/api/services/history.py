@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...collector.rollup import TRACKED as GLOBAL_TRACKED
 from ...ingest.project import TRACKED as PROJECT_TRACKED
+from ...ingest.shop import TRACKED as SHOP_TRACKED
 from ...ingest.user import TRACKED as USER_TRACKED
 
 Interval = Literal["1h", "1d", "1w"]
@@ -45,6 +46,7 @@ class Source:
 METRICS: dict[str, Source] = {
     "project": Source("project_snapshots", "pid", frozenset(PROJECT_TRACKED)),
     "user": Source("user_snapshots", "uid", frozenset(USER_TRACKED)),
+    "shop": Source("shop_snapshots", "sid", frozenset(SHOP_TRACKED)),
     "global": Source("global_snapshots", "scope", frozenset(GLOBAL_TRACKED)),
 }
 

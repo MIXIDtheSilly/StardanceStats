@@ -16,7 +16,9 @@ from ..ingest import recompute_all_users, recompute_user_totals
 from ..parsers.common import utcnow
 from . import frontier
 from .crawl import crawl_project
+from .crawl_devlog import crawl_devlog, enqueue_stale_threads
 from .crawl_mission import crawl_mission
+from .crawl_shop import crawl_shop
 from .crawl_user import crawl_user, resolve_project_owners
 from .rollup import rollup_global
 from .sitemap import sync_sitemap
@@ -49,6 +51,10 @@ async def crawl_one(
         return await crawl_user(db, fetcher, row["ref_id"], with_projects=False)
     if row["kind"] == "mission":
         return await crawl_mission(db, fetcher, row["ref_id"])
+    if row["kind"] == "devlog":
+        return await crawl_devlog(
+            db, fetcher, row["ref_id"], project_id=row.get("parent_id")
+        )
     return await crawl_project(
         db, fetcher, row["ref_id"], defer_user_totals=defer_user_totals
     )
@@ -208,6 +214,14 @@ def build_scheduler(db: AsyncIOMotorDatabase, fetcher: Fetcher) -> AsyncIOSchedu
     scheduler.add_job(
         resolve_owners, "interval", hours=1, args=[db, fetcher],
         id="resolve_owners", **common,
+    )
+    scheduler.add_job(
+        enqueue_stale_threads, "interval", minutes=5, args=[db],
+        id="enqueue_stale_threads", **common,
+    )
+    scheduler.add_job(
+        crawl_shop, "interval", minutes=settings.shop_interval_minutes,
+        args=[db, fetcher], id="crawl_shop", **common,
     )
     scheduler.add_job(
         recompute_derived, "cron", hour=3, args=[db], id="recompute_derived", **common

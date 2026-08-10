@@ -25,6 +25,8 @@ COMPUTED_TOTALS = (
     "ship_stardust", "hours", "shipped_hours", "paid_hours", "likes_received",
     "comments_received", "reposts_received", "views_received",
     "best_multiplier", "avg_multiplier",
+    "comments_sent", "comments_to_others", "comment_threads",
+    "projects_commented", "comment_chars",
 )
 
 TRACKED = PROFILE_STATS + COMPUTED_TOTALS
@@ -176,12 +178,16 @@ async def link_user_id(
     ships = await db.ships.update_many(
         {"username_lower": handle}, {"$set": {"user_id": user_id}}
     )
+    comments = await db.comments.update_many(
+        {"username_lower": handle}, {"$set": {"user_id": user_id}}
+    )
 
     return {
         "projects_owned": owner.modified_count,
         "projects_member": member.modified_count,
         "devlogs": devlogs.modified_count,
         "ships": ships.modified_count,
+        "comments": comments.modified_count,
     }
 
 
@@ -224,8 +230,30 @@ async def recompute_user_totals(
         }},
     ]).to_list(length=1)
 
+    # Trails comments_received until every thread has been read.
+    comments = await db.comments.aggregate([
+        {"$match": {"user_id": user_id, "gone": {"$ne": True}}},
+        {"$group": {
+            "_id": None,
+            "comments_sent": {"$sum": 1},
+            "comments_to_others": {"$sum": {"$cond": ["$is_self", 0, 1]}},
+            "comment_chars": {"$sum": {"$ifNull": ["$body_length", 0]}},
+            "threads": {"$addToSet": "$devlog_id"},
+            "projects": {"$addToSet": "$project_id"},
+            "first_comment_at": {"$min": "$posted_at"},
+            "last_comment_at": {"$max": "$posted_at"},
+        }},
+        {"$project": {
+            "comments_sent": 1, "comments_to_others": 1, "comment_chars": 1,
+            "first_comment_at": 1, "last_comment_at": 1,
+            "comment_threads": {"$size": "$threads"},
+            "projects_commented": {"$size": "$projects"},
+        }},
+    ]).to_list(length=1)
+
     s = ships[0] if ships else {}
     d = devlogs[0] if devlogs else {}
+    c = comments[0] if comments else {}
 
     projects_seen = await db.projects.count_documents(
         {"$or": [{"owner_id": user_id}, {"member_ids": user_id}]}
@@ -245,10 +273,25 @@ async def recompute_user_totals(
         "views_received": int(d.get("views_received") or 0),
         "best_multiplier": s.get("best_multiplier"),
         "avg_multiplier": round(s["avg_multiplier"], 3) if s.get("avg_multiplier") else None,
+        "comments_sent": int(c.get("comments_sent") or 0),
+        "comments_to_others": int(c.get("comments_to_others") or 0),
+        "comment_threads": int(c.get("comment_threads") or 0),
+        "projects_commented": int(c.get("projects_commented") or 0),
+        "comment_chars": int(c.get("comment_chars") or 0),
+        "first_comment_at": c.get("first_comment_at"),
+        "last_comment_at": c.get("last_comment_at"),
     }
     # Over the hours payouts were actually for, not every hour logged.
     totals["stardust_per_paid_hour"] = (
         round(totals["ship_stardust"] / paid_hours, 2) if paid_hours else None
+    )
+    totals["avg_comment_length"] = (
+        round(totals["comment_chars"] / totals["comments_sent"], 1)
+        if totals["comments_sent"] else None
+    )
+    totals["comments_sent_per_received"] = (
+        round(totals["comments_sent"] / totals["comments_received"], 2)
+        if totals["comments_received"] else None
     )
     totals.update(
         estimate_unpaid(totals["ship_stardust"], totals["hours"], paid_hours)

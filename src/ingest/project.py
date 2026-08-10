@@ -247,7 +247,7 @@ async def ingest_project(
 
     await db.projects.update_one({"_id": pid}, {"$set": doc}, upsert=True)
 
-    await _write_devlogs(db, devlogs, now)
+    threads_flagged = await _write_devlogs(db, devlogs, now)
     await _write_ships(db, ships, now)
     linked_users = await _link_known_users(db, doc)
 
@@ -270,6 +270,7 @@ async def ingest_project(
         "first_ingest": first_ingest,
         "devlogs": len(devlogs),
         "ships": len(ships),
+        "threads_flagged": threads_flagged,
         "changed": sorted(changed),
         "snapshot": wrote_snapshot,
         "backfilled": backfilled,
@@ -352,16 +353,36 @@ async def _heartbeat_due(db: AsyncIOMotorDatabase, pid: int, now: datetime) -> b
 
 async def _write_devlogs(
     db: AsyncIOMotorDatabase, devlogs: list[dict[str, Any]], now: datetime
-) -> None:
+) -> int:
+    """Write the cards, flagging the threads whose comment counter has moved."""
     if not devlogs:
-        return
+        return 0
+
+    ids = [d["_id"] for d in devlogs]
+    watermarks = {
+        row["_id"]: row.get("comments_crawled_count")
+        async for row in db.devlogs.find(
+            {"_id": {"$in": ids}}, {"comments_crawled_count": 1}
+        )
+    }
+
     ops = []
+    flagged = 0
     for d in devlogs:
         doc = dict(d)
         doc["username_lower"] = (doc.get("username") or "").lower() or None
         doc["last_crawled"] = now
+        # Worth a fetch when there is a thread to read, or there was one whose
+        # rows now need retiring.
+        count = doc.get("comments") or 0
+        was = watermarks.get(doc["_id"])
+        stale = count != was and bool(count or was)
+        doc["comments_stale"] = stale
+        flagged += stale
         ops.append(UpdateOne({"_id": doc["_id"]}, {"$set": doc}, upsert=True))
+
     await db.devlogs.bulk_write(ops, ordered=False)
+    return flagged
 
 
 async def _write_ships(

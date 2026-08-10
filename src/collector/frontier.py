@@ -24,12 +24,15 @@ def frontier_id(kind: str, ref_id: int | str) -> str:
     return f"{kind}:{ref_id}"
 
 
-def path_for(kind: str, ref_id: int | str) -> str:
+def path_for(kind: str, ref_id: int | str, *, parent_id: int | None = None) -> str:
     if kind == "user":
         # The projects tab adds every project for the same one request.
         return f"/users/{ref_id}/projects"
     if kind == "mission":
         return f"/missions/{ref_id}"
+    if kind == "devlog":
+        # The show route is nested, so the row carries its project alongside.
+        return f"/projects/{parent_id}/devlogs/{ref_id}"
     return f"/projects/{ref_id}"
 
 
@@ -50,7 +53,7 @@ async def due(
         query["kind"] = kind
 
     cursor = db.crawl_frontier.find(
-        query, projection={"kind": 1, "ref_id": 1, "url": 1, "tier": 1}
+        query, projection={"kind": 1, "ref_id": 1, "url": 1, "tier": 1, "parent_id": 1}
     ).sort([("priority", 1), ("next_due", 1)]).limit(limit)
     return [row async for row in cursor]
 
@@ -150,6 +153,55 @@ async def seed_id_range(
     return {"kind": kind, "from": start, "to": end, "seeded": seeded}
 
 
+async def enqueue_devlogs(
+    db: AsyncIOMotorDatabase,
+    rows: list[dict[str, Any]],
+    *,
+    tier: str = "warm",
+    now: datetime | None = None,
+) -> int:
+    """Make devlog threads due now. Rows are {_id, project_id} from `devlogs`."""
+    if not rows:
+        return 0
+    now = now or utcnow()
+
+    wanted = {frontier_id("devlog", r["_id"]): r for r in rows}
+    known = set(await db.crawl_frontier.distinct("_id", {"_id": {"$in": list(wanted)}}))
+
+    fresh = [
+        {
+            "_id": fid,
+            "kind": "devlog",
+            "ref_id": row["_id"],
+            "parent_id": row["project_id"],
+            "url": path_for("devlog", row["_id"], parent_id=row["project_id"]),
+            "tier": tier,
+            "priority": priority(tier, "devlog"),
+            "in_sitemap": False,
+            "first_seen": now,
+            "last_crawled": None,
+            "consecutive_unchanged": 0,
+            "unchanged_since": None,
+            "error_count": 0,
+            "next_due": now,
+        }
+        for fid, row in wanted.items()
+        if fid not in known
+    ]
+    if fresh:
+        await db.crawl_frontier.insert_many(fresh, ordered=False)
+
+    # A moved counter is no reason to retry a page that would not load.
+    revived = await db.crawl_frontier.update_many(
+        {
+            "_id": {"$in": sorted(known)},
+            "$or": [{"error_count": {"$lte": 0}}, {"next_due": {"$lte": now}}],
+        },
+        {"$set": {"tier": tier, "priority": priority(tier, "devlog"), "next_due": now}},
+    )
+    return len(fresh) + revived.modified_count
+
+
 async def record_crawl(
     db: AsyncIOMotorDatabase,
     kind: str,
@@ -160,6 +212,7 @@ async def record_crawl(
     etag: str | None = None,
     last_modified: str | None = None,
     error: str | None = None,
+    parent_id: int | None = None,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Retire a frontier row after a crawl and schedule its next visit."""
@@ -170,14 +223,17 @@ async def record_crawl(
     unchanged = int(existing.get("consecutive_unchanged") or 0)
     unchanged_since = existing.get("unchanged_since")
     errors = int(existing.get("error_count") or 0)
+    parent_id = parent_id if parent_id is not None else existing.get("parent_id")
 
     doc: dict[str, Any] = {
         "kind": kind,
         "ref_id": ref_id,
-        "url": existing.get("url") or path_for(kind, ref_id),
+        "url": existing.get("url") or path_for(kind, ref_id, parent_id=parent_id),
         "last_crawled": now,
         "last_status": status,
     }
+    if parent_id is not None:
+        doc["parent_id"] = parent_id
 
     if status in ERROR_STATUSES:
         # A broken fetch says nothing about how fast the page moves.
@@ -213,7 +269,7 @@ async def record_crawl(
             )
         doc["consecutive_unchanged"] = unchanged
         doc["unchanged_since"] = unchanged_since
-        doc["next_due"] = next_due(tier, last_crawled=now)
+        doc["next_due"] = next_due(tier, last_crawled=now, kind=kind)
 
     doc["tier"] = tier
     doc["priority"] = priority(tier, kind)

@@ -11,6 +11,9 @@ PRIORITY = {"hot": 0, "warm": 1, "cold": 2, "frozen": 3}
 # Under a dozen pages, and every project's payout estimate reads them.
 LEAD = {"mission": -1}
 
+# Kinds whose schedule the tier does not decide.
+KIND_INTERVAL = {"devlog": lambda: settings.comment_recheck_hours}
+
 ERROR_STATUSES = frozenset({"fetch_error", "http_error", "parse_error", "anomaly"})
 
 
@@ -58,7 +61,10 @@ def classify(
     return "cold"
 
 
-def next_due(tier: str, *, last_crawled: datetime) -> datetime:
+def next_due(tier: str, *, last_crawled: datetime, kind: str | None = None) -> datetime:
+    """When to come back. A comment thread is queued by its counter, not by time."""
+    if kind in KIND_INTERVAL:
+        return last_crawled + timedelta(hours=KIND_INTERVAL[kind]())
     return last_crawled + tier_interval(tier)
 
 

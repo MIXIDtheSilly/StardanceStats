@@ -12,7 +12,11 @@ log = logging.getLogger(__name__)
 
 SCOPE = "platform"
 
-_COUNTS = ("users", "projects", "devlogs", "ships", "users_known", "projects_known")
+_COUNTS = (
+    "users", "projects", "devlogs", "ships", "comments_seen",
+    "users_known", "projects_known", "threads_pending",
+    "shop_items", "shop_items_on_sale",
+)
 
 _PROJECT_SUMS = {
     "hours": "$stats.total_hours",
@@ -53,6 +57,13 @@ async def rollup_global(
         "projects": await db.projects.count_documents({"gone": {"$ne": True}}),
         "devlogs": await db.devlogs.count_documents({}),
         "ships": await db.ships.count_documents({}),
+        # `comments` above is what the counters claim, this is what we read.
+        "comments_seen": await db.comments.count_documents({"gone": {"$ne": True}}),
+        "threads_pending": await db.devlogs.count_documents({"comments_stale": True}),
+        "shop_items": await db.shop_items.count_documents({"gone": {"$ne": True}}),
+        "shop_items_on_sale": await db.shop_items.count_documents(
+            {"gone": {"$ne": True}, "on_sale": True}
+        ),
         "users_known": await db.crawl_frontier.count_documents(
             {"kind": "user", "in_sitemap": {"$ne": False}}
         ),
