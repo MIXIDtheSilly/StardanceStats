@@ -14,8 +14,10 @@ from src.db import bootstrap
 
 TEST_DB = "stardance_stats_test_api"
 UTC = timezone.utc
-NOW = datetime(2026, 8, 6, 12, 0, tzinfo=UTC)
-DAY1 = datetime(2026, 8, 1, tzinfo=UTC)
+# locf stops at the real clock, so the fixtures hang off today rather than a fixed date.
+TODAY = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+NOW = TODAY + timedelta(hours=12)
+DAY1 = TODAY - timedelta(days=5)
 PID = 8100
 
 pytestmark = pytest.mark.asyncio
@@ -105,7 +107,9 @@ async def test_gaps_stay_gaps_unless_fill_is_asked_for(db, client):
     await seed(db, [(0, 10), (4, 20)])
 
     plain = await history(client, interval="1d")
-    assert [p["ts"][:10] for p in plain["series"]["likes"]] == ["2026-08-01", "2026-08-05"]
+    assert [p["ts"][:10] for p in plain["series"]["likes"]] == [
+        DAY1.date().isoformat(), (DAY1 + timedelta(days=4)).date().isoformat()
+    ]
     assert plain["buckets"] == 2
 
 
@@ -133,7 +137,7 @@ async def test_a_window_opening_on_a_flat_stretch_is_not_empty(db, client):
     assert (await history(client, interval="1d", **window))["series"]["likes"] == []
 
     filled = (await history(client, interval="1d", fill="locf", **window))["series"]["likes"]
-    assert [p["v"] for p in filled] == [10, 10, 10, 10]      # Aug 3 through Aug 6
+    assert [p["v"] for p in filled] == [10, 10, 10, 10]      # DAY1+2 through today
     assert all(p["filled"] for p in filled)
 
 
