@@ -38,7 +38,7 @@
 				</a>
 			{:else}
 				<span class="tab tab--soon" style="--accent: {tab.accent}">
-					{tab.label}<em>soon</em>
+					{tab.label}
 				</span>
 			{/if}
 		{/each}
@@ -90,7 +90,8 @@
 		display: flex;
 		align-items: baseline;
 		gap: var(--space-xs);
-		padding: var(--space-xs) 0;
+		padding: var(--space-xs) var(--space-s);
+		border-radius: var(--radius);
 		font-size: var(--font-size-l);
 		font-weight: 700;
 		color: var(--color-space-text-muted);
@@ -111,14 +112,6 @@
 		cursor: default;
 	}
 
-	.tab em {
-		font-size: var(--font-size-xs);
-		font-style: normal;
-		font-weight: 400;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-	}
-
 	.side__foot {
 		display: flex;
 		flex-direction: column;
@@ -126,6 +119,10 @@
 		margin-top: auto;
 		font-size: var(--font-size-xs);
 		color: var(--color-set-1-fg-secondary);
+	}
+
+	.side__foot > * {
+		padding: var(--space-xxs) var(--space-s);
 	}
 
 	@media (max-width: 860px) {
@@ -160,7 +157,7 @@
 
 		.tab {
 			font-size: var(--font-size-m);
-			padding: var(--space-xxs) 0;
+			padding: var(--space-xxs) var(--space-xs);
 		}
 
 		.side__foot {

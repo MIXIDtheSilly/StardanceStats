@@ -36,7 +36,7 @@
 	--font-size-xxxl: 2rem;
 	--font-hero: clamp(36px, 4.6vw, 64px);
 
-	--color-space-bg: hsl(245, 55%, 8%);
+	--color-space-bg: #0c0c15;
 	--color-space-bg-2: hsl(245, 50%, 12%);
 	--color-space-text: hsl(0, 0%, 100%);
 	--color-space-text-muted: hsla(0, 0%, 100%, 0.7);

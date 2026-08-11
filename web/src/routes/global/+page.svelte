@@ -24,18 +24,31 @@
 	let points = $derived(series[selected] ?? []);
 
 	// from/to describe the axis we asked for; only the points say what was observed.
+	function observedPoints(key: string) {
+		return (series[key] ?? []).filter((p) => Number.isFinite(p.v));
+	}
+
+	// The tiles report the latest day, not the whole window the chart plots.
 	function movement(key: string): { delta: number; days: number } | null {
-		const observed = (series[key] ?? []).filter((p) => Number.isFinite(p.v));
+		const observed = observedPoints(key);
 		if (observed.length < 2) return null;
-		const first = observed[0];
 		const last = observed[observed.length - 1];
+		const prev = observed[observed.length - 2];
 		return {
-			delta: last.v - first.v,
-			days: Math.max(1, Math.round((Date.parse(last.ts) - Date.parse(first.ts)) / 86_400_000))
+			delta: last.v - prev.v,
+			days: Math.max(1, Math.round((Date.parse(last.ts) - Date.parse(prev.ts)) / 86_400_000))
 		};
 	}
 
-	let span = $derived(movement(selected)?.days ?? data.windowDays);
+	function observedSpan(key: string): number | null {
+		const observed = observedPoints(key);
+		if (observed.length < 2) return null;
+		const from = Date.parse(observed[0].ts);
+		const to = Date.parse(observed[observed.length - 1].ts);
+		return Math.max(1, Math.round((to - from) / 86_400_000));
+	}
+
+	let span = $derived(observedSpan(selected) ?? data.windowDays);
 
 </script>
 
@@ -154,7 +167,6 @@
 		padding: var(--space-m);
 		background: var(--color-space-bg);
 		border: none;
-		border-top: 2px solid transparent;
 		text-align: left;
 		cursor: pointer;
 		transition: background 0.15s ease;
@@ -165,7 +177,6 @@
 	}
 
 	.figure--on {
-		border-top-color: var(--accent);
 		background: var(--color-overlay-light-soft);
 	}
 
