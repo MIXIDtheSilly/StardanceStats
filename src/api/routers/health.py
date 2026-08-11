@@ -57,16 +57,16 @@ async def health(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
 @router.get("/meta")
 async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """Corpus size and coverage."""
-    listed = {
-        kind: await db.crawl_frontier.count_documents(
-            {"kind": kind, "in_sitemap": {"$ne": False}}
+    # All three count frontier rows, so tracked is the denominator for both.
+    listed, tracked, crawled = {}, {}, {}
+    for kind in ("project", "user"):
+        listed[kind] = await db.crawl_frontier.count_documents(
+            {"kind": kind, "in_sitemap": True}
         )
-        for kind in ("project", "user")
-    }
-    crawled = {
-        "project": await db.projects.count_documents({"gone": {"$ne": True}}),
-        "user": await db.users.count_documents({"gone": {"$ne": True}}),
-    }
+        tracked[kind] = await db.crawl_frontier.count_documents({"kind": kind})
+        crawled[kind] = await db.crawl_frontier.count_documents(
+            {"kind": kind, "last_crawled": {"$ne": None}}
+        )
     return {
         "counts": {
             "projects": await db.projects.count_documents({}),
@@ -94,10 +94,12 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
         "coverage": {
             "users_complete": await db.users.count_documents({"coverage.complete": True}),
             "users_partial": await db.users.count_documents({"coverage.complete": False}),
-            # Against the sitemap, upstream's own index of what is public.
+            # listed is what the sitemap indexes; tracked adds what we found ourselves.
             "projects_listed": listed["project"],
+            "projects_tracked": tracked["project"],
             "projects_crawled": crawled["project"],
             "users_listed": listed["user"],
+            "users_tracked": tracked["user"],
             "users_crawled": crawled["user"],
             "threads_read": await db.devlogs.count_documents(
                 {"comments_crawled_at": {"$ne": None}}

@@ -1,0 +1,94 @@
+@font-face {
+	font-family: 'Exo 2';
+	font-style: normal;
+	font-weight: 400 700;
+	font-display: swap;
+	src: url('/fonts/Exo2-latin.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Exo 2';
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url('/fonts/Exo2-latin-italic.woff2') format('woff2');
+}
+
+@font-face {
+	font-family: 'Arc Space';
+	font-style: normal;
+	font-weight: normal;
+	font-display: swap;
+	src: url('/fonts/ArcSpace.woff2') format('woff2');
+}
+
+:root {
+	--font-text: 'Exo 2', sans-serif;
+	--font-display: 'Arc Space', 'Exo 2', sans-serif;
+	--font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+	--font-size-xs: 0.75rem;
+	--font-size-s: 0.875rem;
+	--font-size-m: 1rem;
+	--font-size-l: 1.125rem;
+	--font-size-xl: 1.25rem;
+	--font-size-xxl: 1.5rem;
+	--font-size-xxxl: 2rem;
+	--font-hero: clamp(36px, 4.6vw, 64px);
+
+	--color-space-bg: hsl(245, 55%, 8%);
+	--color-space-bg-2: hsl(245, 50%, 12%);
+	--color-space-text: hsl(0, 0%, 100%);
+	--color-space-text-muted: hsla(0, 0%, 100%, 0.7);
+	--color-space-accent: hsl(265, 95%, 78%);
+	--color-space-accent-soft: hsla(265, 95%, 78%, 0.18);
+	--color-space-border: hsl(228, 18%, 45%);
+	--color-space-surface-soft: hsla(228, 18%, 45%, 0.5);
+	--color-space-surface-faint: hsla(228, 18%, 45%, 0.18);
+
+	--color-set-1-bg: #08061e;
+	--color-set-2-bg: #343651;
+	--color-set-3-bg: #606684;
+	--color-set-1-fg-secondary: #83828d;
+
+	--color-brand-mint: #81ffff;
+	--color-brand-lilac: #ebb7ff;
+	--color-brand-blue: #95dbff;
+	--color-brand-salmon: #ff8d9d;
+	--color-brand-yellow: #ffe564;
+	--color-brand-peach: #ffd598;
+	--color-brand-cream: #fff8d5;
+	--color-brand-ivory: #fffcf4;
+	--color-brand-orange: #ffb07a;
+
+	--color-brand-mint-soft: rgba(129, 255, 255, 0.18);
+	--color-brand-lilac-soft: rgba(235, 183, 255, 0.18);
+	--color-brand-salmon-soft: rgba(255, 141, 157, 0.18);
+	--color-brand-yellow-soft: rgba(255, 229, 100, 0.18);
+
+	--color-brand-highlight: #f4ebb9;
+	--color-brand-highlight-faint: rgba(244, 235, 185, 0.12);
+
+	--color-overlay-light-soft: hsla(0, 0%, 100%, 0.05);
+	--color-overlay-light: hsla(0, 0%, 100%, 0.1);
+	--color-border-input: hsla(0, 0%, 100%, 0.4);
+	--color-border-input-focus: hsla(0, 0%, 100%, 0.9);
+
+	--color-backdrop: hsla(245, 67%, 7%, 0.55);
+	--color-shadow-deep: hsla(245, 67%, 7%, 0.45);
+
+	--radius: 8px;
+	--radius-pill: 999px;
+
+	--space-xxxs: 0.25rem;
+	--space-xxs: 0.375rem;
+	--space-xs: 0.5rem;
+	--space-s: 0.75rem;
+	--space-m: 1rem;
+	--space-l: 1.5rem;
+	--space-xl: 2rem;
+	--space-xxl: 2.5rem;
+	--space-xxxl: 3rem;
+
+	--content-width: 1180px;
+}

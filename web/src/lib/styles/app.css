@@ -1,0 +1,99 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+}
+
+html {
+	background-color: var(--color-space-bg);
+	/* Every token is in rem, so the whole scale grows with the viewport from here. */
+	font-size: clamp(16px, 0.55vw + 12px, 21px);
+}
+
+body {
+	min-height: 100vh;
+	font-family: var(--font-text);
+	font-size: var(--font-size-m);
+	color: var(--color-space-text);
+	background-color: var(--color-space-bg);
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	line-height: 1.1;
+	font-weight: 700;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+a:hover {
+	color: var(--color-brand-blue);
+}
+
+button,
+input,
+select {
+	font: inherit;
+	color: inherit;
+}
+
+.container {
+	width: 100%;
+	max-width: var(--content-width);
+	margin: 0 auto;
+	padding: 0 var(--space-l);
+}
+
+@media (max-width: 640px) {
+	.container {
+		padding: 0 var(--space-m);
+	}
+}
+
+.card {
+	background: var(--color-set-2-bg);
+	border-radius: var(--radius);
+	padding: var(--space-l);
+}
+
+.muted {
+	color: var(--color-space-text-muted);
+}
+
+.eyebrow {
+	font-size: var(--font-size-xs);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-set-1-fg-secondary);
+}
+
+.tabular {
+	font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
+:focus-visible {
+	outline: 2px solid var(--color-brand-blue);
+	outline-offset: 2px;
+}

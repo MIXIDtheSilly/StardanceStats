@@ -65,10 +65,10 @@ async def rollup_global(
             {"gone": {"$ne": True}, "on_sale": True}
         ),
         "users_known": await db.crawl_frontier.count_documents(
-            {"kind": "user", "in_sitemap": {"$ne": False}}
+            {"kind": "user", "in_sitemap": True}
         ),
         "projects_known": await db.crawl_frontier.count_documents(
-            {"kind": "project", "in_sitemap": {"$ne": False}}
+            {"kind": "project", "in_sitemap": True}
         ),
     }
     for name, value in sums.items():

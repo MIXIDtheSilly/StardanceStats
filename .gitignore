@@ -6,8 +6,10 @@ __pycache__/
 *.py[cod]
 .env
 .pytest_cache/
+.ruff_cache/
 *.egg-info/
 .DS_Store
+node_modules/
 
 # scratch output from manual crawls
 live.html

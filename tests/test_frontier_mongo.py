@@ -121,6 +121,19 @@ async def test_delisted_rows_are_frozen_not_deleted(db):
     assert (await apply_sitemap(db, entries(("project", 1, NOW)), now=later))["delisted"] == 0
 
 
+async def test_a_page_discovered_off_sitemap_survives_the_delisting_sweep(db):
+    """It was never listed, so a sync finding it absent is not a delisting."""
+    await frontier.record_crawl(db, "project", 99, status="ok", changed=True, now=NOW)
+
+    later = NOW + timedelta(hours=1)
+    assert (await apply_sitemap(db, entries(("project", 1, NOW)), now=later))["delisted"] == 0
+
+    row = await db.crawl_frontier.find_one({"_id": "project:99"})
+    assert row["in_sitemap"] is False
+    assert row["tier"] != "frozen"
+    assert "delisted_at" not in row
+
+
 async def test_relisting_revives_a_frozen_row(db):
     await apply_sitemap(db, entries(("project", 1, NOW)), now=NOW)
     await apply_sitemap(db, [], now=NOW + timedelta(hours=1))

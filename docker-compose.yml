@@ -21,9 +21,9 @@ x-app: &app
 services:
   api:
     <<: *app
-    command: uvicorn src.api.main:app --host 127.0.0.1 --port 8471
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8471
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://127.0.0.1:8471/health', timeout=5)"]
+      test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://127.0.0.1:8471/v1/health', timeout=5)"]
       interval: 30s
       start_period: 20s
 
@@ -31,3 +31,16 @@ services:
     <<: *app
     command: python -m src.collector.run
     mem_limit: 1g
+
+  web:
+    build:
+      context: /home/mixid/crawler/web
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [api]
+    environment:
+      STATS_API: ${WEB_STATS_API:-http://127.0.0.1:8471/v1}
+      PORT: "3000"
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}

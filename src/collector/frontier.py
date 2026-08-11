@@ -53,8 +53,7 @@ async def due(
     if kind:
         query["kind"] = kind
     elif exclude:
-        # A residual filter on the (priority, next_due) index, so the scan
-        # stays in sort order instead of collecting and sorting in memory.
+        # A residual filter on the (priority, next_due) index, so the scan stays in sort order.
         query["kind"] = {"$nin": list(exclude)}
 
     cursor = db.crawl_frontier.find(
@@ -284,7 +283,10 @@ async def record_crawl(
         doc["last_modified"] = last_modified
 
     await db.crawl_frontier.update_one(
-        {"_id": fid}, {"$set": doc, "$setOnInsert": {"first_seen": now}}, upsert=True
+        {"_id": fid},
+        # A missing in_sitemap reads as listed to the delisting sweep, which then freezes the row.
+        {"$set": doc, "$setOnInsert": {"first_seen": now, "in_sitemap": False}},
+        upsert=True,
     )
     return doc
 
