@@ -7,6 +7,7 @@ from typing import Any, Sequence
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import UpdateOne
 
+from .. import blacklist
 from ..parsers.common import utcnow
 from .tiering import ERROR_STATUSES, classify, error_backoff, next_due, priority
 
@@ -156,8 +157,12 @@ async def seed_id_range(
         "tier": "cold",
     }
 
+    blocked = blacklist.user_ids() if kind == "user" else frozenset()
+
     ops: list[UpdateOne] = []
     for ref_id in range(start, end + 1):
+        if ref_id in blocked:
+            continue
         ops.append(
             UpdateOne(
                 {"_id": frontier_id(kind, ref_id)},

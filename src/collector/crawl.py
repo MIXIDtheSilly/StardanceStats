@@ -5,6 +5,7 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from .. import blacklist
 from ..fetcher import Fetcher, FetchError
 from ..ingest import AnomalyRejected, ingest_project
 from ..parsers import ParseError, parse_project_page
@@ -60,6 +61,13 @@ async def crawl_project(
         await _record(db, project_id, "parse_error", error=f"parse: {exc}")
         log.error("parse failure on project %s: %s", project_id, exc)
         return {"project_id": project_id, "status": "parse_error", "error": str(exc)}
+
+    # The sitemap lists projects without their owner, so this is the first look.
+    owner = (parsed.data.get("project") or {}).get("owner_username")
+    if await blacklist.is_blocked_handle(db, owner):
+        await blacklist.purge_projects(db, [project_id])
+        log.info("project %s belongs to blacklisted %s, dropped", project_id, owner)
+        return {"project_id": project_id, "status": "blacklisted"}
 
     try:
         summary = await ingest_project(db, parsed, now=now)

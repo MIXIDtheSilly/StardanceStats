@@ -22,7 +22,8 @@ PROFILE_STATS = (
 
 # Rates and estimates stay out, so a formula change cannot strand history.
 COMPUTED_TOTALS = (
-    "ship_stardust", "hours", "shipped_hours", "paid_hours", "likes_received",
+    "ship_stardust", "voted_stardust", "mission_stardust",
+    "hours", "shipped_hours", "paid_hours", "likes_received",
     "comments_received", "reposts_received", "views_received",
     "best_multiplier", "avg_multiplier",
     "comments_sent", "comments_to_others", "comment_threads",
@@ -206,7 +207,19 @@ async def recompute_user_totals(
             "_id": None,
             "ships": {"$sum": 1},
             "ships_paid": {"$sum": {"$cond": [{"$gt": ["$payout", None]}, 1, 0]}},
-            "ship_stardust": {"$sum": {"$ifNull": ["$payout", 0]}},
+            "voted_stardust": {"$sum": {"$ifNull": ["$payout", 0]}},
+            "mission_stardust": {"$sum": {"$ifNull": ["$mission_stardust", 0]}},
+            "mission_pending_stardust": {
+                "$sum": {"$ifNull": ["$mission_pending_stardust", 0]}
+            },
+            # Hours a mission prices itself, so the voting rate must not claim them.
+            "mission_hours": {"$sum": {
+                "$cond": [
+                    {"$in": ["$payout_path", ["static_prize", "flat_rate"]]},
+                    {"$ifNull": ["$hours_at_ship", 0]},
+                    0,
+                ]
+            }},
             "shipped_hours": {"$sum": {"$ifNull": ["$hours_at_ship", 0]}},
             # Only ships that have paid out, so the rate keeps one basis.
             "paid_hours": {"$sum": {
@@ -262,8 +275,13 @@ async def recompute_user_totals(
     shipped_hours = round(s.get("shipped_hours") or 0.0, 2)
     paid_hours = round(s.get("paid_hours") or 0.0, 2)
 
+    voted_stardust = int(s.get("voted_stardust") or 0)
+    mission_stardust = int(s.get("mission_stardust") or 0)
+
     totals = {
-        "ship_stardust": int(s.get("ship_stardust") or 0),
+        "ship_stardust": voted_stardust + mission_stardust,
+        "voted_stardust": voted_stardust,
+        "mission_stardust": mission_stardust,
         "hours": round((d.get("seconds") or 0) / 3600.0, 2),
         "shipped_hours": shipped_hours,
         "paid_hours": paid_hours,
@@ -281,9 +299,9 @@ async def recompute_user_totals(
         "first_comment_at": c.get("first_comment_at"),
         "last_comment_at": c.get("last_comment_at"),
     }
-    # Over the hours payouts were actually for, not every hour logged.
+    # Over the hours payouts were actually for; a mission award has no rate.
     totals["stardust_per_paid_hour"] = (
-        round(totals["ship_stardust"] / paid_hours, 2) if paid_hours else None
+        round(voted_stardust / paid_hours, 2) if paid_hours else None
     )
     totals["avg_comment_length"] = (
         round(totals["comment_chars"] / totals["comments_sent"], 1)
@@ -294,7 +312,14 @@ async def recompute_user_totals(
         if totals["comments_received"] else None
     )
     totals.update(
-        estimate_unpaid(totals["ship_stardust"], totals["hours"], paid_hours)
+        estimate_unpaid(
+            voted_stardust,
+            totals["hours"],
+            paid_hours,
+            mission_hours=round(s.get("mission_hours") or 0.0, 2),
+            mission_stardust=mission_stardust,
+            mission_pending_stardust=int(s.get("mission_pending_stardust") or 0),
+        )
     )
 
     user = await db.users.find_one(

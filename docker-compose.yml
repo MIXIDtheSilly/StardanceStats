@@ -6,6 +6,7 @@ x-app: &app
   environment:
     STARDANCE_MONGO_URL: ${DOCKER_MONGO_URL:?set this in the Portainer stack environment variables}
     STARDANCE_PROXIES_FILE: /app/proxies.txt
+    STARDANCE_BLACKLIST_USERS: "${BLACKLIST_USERS:-285}"
     STARDANCE_PROXY_REQUESTS_PER_SECOND: "0.5"
     STARDANCE_CRAWL_BATCH_SIZE: "200"
     STARDANCE_CRAWL_CONCURRENCY: "128"
@@ -44,7 +45,7 @@ services:
     depends_on: [api]
     environment:
       STATS_API: ${WEB_STATS_API:-http://127.0.0.1:8471/v1}
-      PORT: "3000"
+      PORT: "5173"
     logging:
       driver: json-file
       options: {max-size: "10m", max-file: "5"}

@@ -5,6 +5,7 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from .. import blacklist
 from ..fetcher import Fetcher, FetchError
 from ..ingest import (
     UserAnomalyRejected,
@@ -33,6 +34,10 @@ async def crawl_user(
     refresh_projects: bool = False,
 ) -> dict[str, Any]:
     """Crawl one user by numeric id. Expected outcomes are returned, not raised."""
+    if blacklist.is_blocked(user_id):
+        await blacklist.retire(db, "user", user_id)
+        return {"user_id": user_id, "status": "blacklisted"}
+
     frontier_id = frontier_store.frontier_id("user", user_id)
     frontier = await db.crawl_frontier.find_one({"_id": frontier_id}) if use_cache else None
     etag = (frontier or {}).get("etag")
@@ -130,6 +135,9 @@ async def crawl_user_by_handle(
 ) -> dict[str, Any]:
     """Crawl by handle, taking the numeric id from the page's og tags."""
     handle = handle.lstrip("@")
+    if await blacklist.is_blocked_handle(db, handle):
+        return {"handle": handle, "status": "blacklisted"}
+
     try:
         response = await fetcher.get(f"/@{handle}/projects")
     except FetchError as exc:
@@ -145,6 +153,13 @@ async def crawl_user_by_handle(
     except ParseError as exc:
         log.error("parse failure on @%s: %s", handle, exc)
         return {"handle": handle, "status": "parse_error", "error": str(exc)}
+
+    # Blocking the id alone would never teach us the handle their projects carry.
+    user_id = parsed.data["user"]["_id"]
+    if blacklist.is_blocked(user_id):
+        await blacklist.remember(db, parsed.data["user"].get("username") or handle)
+        await blacklist.retire(db, "user", user_id)
+        return {"handle": handle, "user_id": user_id, "status": "blacklisted"}
 
     try:
         summary = await ingest_user(db, parsed, now=utcnow())

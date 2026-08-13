@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     mongo_url: str = "mongodb://localhost:27017"
     mongo_db: str = "stardance_stats"
 
+    # Never crawled, and purged from the database when the collector starts.
+    blacklist_users: str = ""
+
     sitemap_path: str = "/sitemap.xml"
     # One 5 MB document, so it gets its own ceiling.
     sitemap_max_bytes: int = 64 * 1024 * 1024
@@ -122,6 +125,16 @@ class Settings(BaseSettings):
         if self.proxies_file:
             entries += load_proxy_file(self.proxies_file, scheme=self.proxy_scheme)
         return list(dict.fromkeys(entries))
+
+    @property
+    def blacklist_user_ids(self) -> frozenset[int]:
+        ids = set()
+        for item in _split(self.blacklist_users):
+            try:
+                ids.add(int(item))
+            except ValueError:
+                continue
+        return frozenset(ids)
 
     @property
     def api_title(self) -> str:

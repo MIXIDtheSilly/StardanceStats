@@ -9,7 +9,7 @@ from pymongo import ReplaceOne, UpdateOne
 
 from ..config import settings
 from ..parsers.common import ParseResult, utcnow
-from .mission import assign_payout_paths, load_missions, mission_pending
+from .mission import assign_payout_paths, load_missions, mission_payout
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +54,10 @@ def build_stats(
     if total_hours is None:
         total_hours = round(summed_hours, 2)
 
-    stardust_total = sum(payouts) if payouts else 0
+    # A mission's own award is never rendered on a ship card, only inferred.
+    mission = mission_payout(ships, missions)
+    voted_stardust = sum(payouts) if payouts else 0
+    stardust_total = voted_stardust + mission["stardust"]
 
     # A ship pays out only once its review closes, so these differ.
     shipped_hours = _hours_of(ships)
@@ -73,21 +76,24 @@ def build_stats(
         "views": _sum(devlogs, "views"),
         "ships": len(ships),
         "stardust_total": stardust_total,
+        "voted_stardust": voted_stardust,
+        "mission_stardust": mission["stardust"],
         "latest_multiplier": latest.get("multiplier") if latest else None,
         "avg_multiplier": round(sum(multipliers) / len(multipliers), 3) if multipliers else None,
     }
-    # Over the hours those payouts were for; every hour logged mixes the two.
+    # Rated payouts over the hours they were for; a mission award has no rate.
     stats["stardust_per_paid_hour"] = (
-        round(stardust_total / paid_hours, 2) if paid_hours else None
+        round(voted_stardust / paid_hours, 2) if paid_hours else None
     )
 
-    pending = mission_pending(ships, missions)
     stats.update(estimate_unpaid(
-        stardust_total, summed_hours, paid_hours,
-        mission_hours=pending["hours"], mission_stardust=pending["stardust"],
+        voted_stardust, summed_hours, paid_hours,
+        mission_hours=mission["hours"],
+        mission_stardust=mission["stardust"],
+        mission_pending_stardust=mission["pending_stardust"],
     ))
-    stats["fixed_payout_hours"] = pending["fixed_payout_hours"]
-    stats["flat_rate_hours"] = pending["flat_rate_hours"]
+    stats["fixed_payout_hours"] = mission["fixed_payout_hours"]
+    stats["flat_rate_hours"] = mission["flat_rate_hours"]
     return stats
 
 
@@ -103,8 +109,9 @@ def estimate_unpaid(
     *,
     mission_hours: float = 0.0,
     mission_stardust: int = 0,
+    mission_pending_stardust: int = 0,
 ) -> dict[str, Any]:
-    """Value every hour that has not been paid for yet."""
+    """Value every hour that has not been paid for yet. `stardust` is rated only."""
     unpaid = round(max(logged_hours - (paid_hours or 0.0), 0.0), 2)
     # A mission pays its own hours at its own terms, never at the voting rate.
     ratable = round(max(unpaid - mission_hours, 0.0), 2)
@@ -113,20 +120,24 @@ def estimate_unpaid(
         "unpaid_hours": unpaid,
         "ratable_unpaid_hours": ratable,
         "mission_pending_hours": round(mission_hours, 2),
-        "mission_pending_stardust": mission_stardust,
+        # Awaiting approval only: an approved award is already in the total.
+        "mission_pending_stardust": mission_pending_stardust,
         "estimated_pending_stardust": None,
         "estimated_total_stardust": None,
     }
 
     if paid_hours and stardust:
         out["estimated_pending_stardust"] = (
-            round(ratable * (stardust / paid_hours)) + mission_stardust
+            round(ratable * (stardust / paid_hours)) + mission_pending_stardust
         )
-    elif mission_stardust:
-        out["estimated_pending_stardust"] = mission_stardust
+    elif mission_pending_stardust:
+        out["estimated_pending_stardust"] = mission_pending_stardust
 
+    banked = stardust + mission_stardust
     if out["estimated_pending_stardust"] is not None:
-        out["estimated_total_stardust"] = stardust + out["estimated_pending_stardust"]
+        out["estimated_total_stardust"] = banked + out["estimated_pending_stardust"]
+    elif mission_stardust:
+        out["estimated_total_stardust"] = banked
     return out
 
 

@@ -28,7 +28,7 @@ export const PEOPLE_METRICS: MetricDef[] = [
 		source: 'computed',
 		chartable: true,
 		blurb:
-			'Paid out for ships we have crawled. Achievements, missions and manual grants are not public, so this is a floor.'
+			'Rated ship payouts, plus the fixed and per-hour awards missions pay directly. Achievements and manual grants are not public, so this is still a floor.'
 	},
 	{
 		key: 'estimated_total_stardust',

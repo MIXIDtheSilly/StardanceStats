@@ -8,6 +8,7 @@ from typing import Any, Iterable, Iterator, NamedTuple
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import UpdateOne
 
+from .. import blacklist
 from ..config import settings
 from ..fetcher import Fetcher, FetchError
 from ..parsers.common import utcnow
@@ -137,6 +138,9 @@ async def apply_sitemap(
     for entry in entries:
         counts["seen"] += 1
         if entry.ref_id is None:
+            counts["skipped"] += 1
+            continue
+        if entry.kind == "user" and blacklist.is_blocked(entry.ref_id):
             counts["skipped"] += 1
             continue
 

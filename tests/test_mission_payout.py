@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from src.ingest.mission import assign_payout_paths, mission_pending
+from src.ingest.mission import assign_payout_paths, mission_payout
 from src.ingest.project import build_stats, estimate_unpaid
 
 UTC = timezone.utc
@@ -17,7 +17,7 @@ MISSIONS = {
 }
 
 
-def ship(n: int, *, mission=None, hours=10.0, payout=None) -> dict:
+def ship(n: int, *, mission=None, hours=10.0, payout=None, status="approved") -> dict:
     return {
         "_id": n,
         "ship_number": n,
@@ -25,6 +25,7 @@ def ship(n: int, *, mission=None, hours=10.0, payout=None) -> dict:
         "hours_at_ship": hours,
         "payout": payout,
         "mission_slug": mission,
+        "status": status,
     }
 
 
@@ -78,29 +79,49 @@ def test_a_flat_rate_missions_ships_stay_flat_rate():
     assert [s["payout_path"] for s in ships] == ["flat_rate", "flat_rate"]
 
 
-def test_pending_values_a_fixed_ship_at_the_prize_not_the_rate():
+def test_a_fixed_ship_is_awarded_the_prize_not_the_rate():
     ships = [ship(1, mission="slack-bot", hours=12.0)]
     assign_payout_paths(ships, MISSIONS)
-    pending = mission_pending(ships, MISSIONS)
+    payout = mission_payout(ships, MISSIONS)
 
-    assert pending["fixed_payout_hours"] == 12.0
-    assert pending["flat_rate_hours"] == 0.0
-    assert pending["stardust"] == 30
+    assert payout["fixed_payout_hours"] == 12.0
+    assert payout["flat_rate_hours"] == 0.0
+    assert payout["stardust"] == 30
+    assert payout["pending_stardust"] == 0
 
 
-def test_pending_values_flat_rate_hours_at_the_stated_rate():
+def test_flat_rate_hours_are_awarded_at_the_stated_rate():
     ships = [ship(1, mission="hackpad", hours=8.0)]
     assign_payout_paths(ships, MISSIONS)
-    pending = mission_pending(ships, MISSIONS)
+    payout = mission_payout(ships, MISSIONS)
 
-    assert pending["flat_rate_hours"] == 8.0
-    assert pending["stardust"] == 40           # 8 h at 5/h
+    assert payout["flat_rate_hours"] == 8.0
+    assert payout["stardust"] == 40           # 8 h at 5/h
 
 
-def test_a_paid_ship_contributes_nothing_pending():
+def test_a_paid_ship_is_never_credited_twice():
     ships = [ship(1, mission="hackpad", hours=8.0, payout=99)]
     assign_payout_paths(ships, MISSIONS)
-    assert mission_pending(ships, MISSIONS)["stardust"] == 0
+    assert mission_payout(ships, MISSIONS)["stardust"] == 0
+
+
+def test_an_unapproved_ship_has_not_been_awarded_yet():
+    """The card renders no payout, so approval is the only sign one landed."""
+    ships = [ship(1, mission="slack-bot", status="pending")]
+    assign_payout_paths(ships, MISSIONS)
+    payout = mission_payout(ships, MISSIONS)
+
+    assert payout["stardust"] == 0
+    assert payout["pending_stardust"] == 30
+
+
+def test_a_returned_ship_never_earns_the_prize():
+    ships = [ship(1, mission="slack-bot", status="returned")]
+    assign_payout_paths(ships, MISSIONS)
+    payout = mission_payout(ships, MISSIONS)
+
+    assert payout["stardust"] == 0
+    assert payout["pending_stardust"] == 0
 
 
 def test_the_estimate_is_unchanged_when_no_mission_is_involved():
@@ -119,16 +140,26 @@ def test_mission_hours_are_priced_at_mission_terms_not_the_voting_rate():
     assert out["unpaid_hours"] == 50.0
     assert out["ratable_unpaid_hours"] == 30.0
     assert out["mission_pending_hours"] == 20.0
+    # Awarded, so it is banked rather than estimated.
+    assert out["mission_pending_stardust"] == 0
+    assert out["estimated_pending_stardust"] == 600     # 30 ratable hours at 20/h
+    assert out["estimated_total_stardust"] == 1630      # 1000 + 30 awarded + 600
+
+
+def test_an_unapproved_prize_stays_in_the_estimate():
+    out = estimate_unpaid(
+        1000, logged_hours=100.0, paid_hours=50.0,
+        mission_hours=20.0, mission_pending_stardust=30,
+    )
     assert out["mission_pending_stardust"] == 30
-    # 30 ratable hours at 20/h, plus the mission's own 30.
     assert out["estimated_pending_stardust"] == 630
     assert out["estimated_total_stardust"] == 1630
 
 
-def test_a_mission_prize_is_estimated_even_with_no_voting_history():
+def test_an_awarded_prize_counts_with_no_voting_history():
     out = estimate_unpaid(0, logged_hours=12.0, paid_hours=None,
                           mission_hours=12.0, mission_stardust=30)
-    assert out["estimated_pending_stardust"] == 30
+    assert out["estimated_pending_stardust"] is None
     assert out["estimated_total_stardust"] == 30
 
 
@@ -158,8 +189,32 @@ def test_stats_price_a_fixed_mission_ship_at_its_prize():
     assert stats["unpaid_hours"] == 16.0               # 20 logged - 4 paid
     assert stats["fixed_payout_hours"] == 6.0
     assert stats["ratable_unpaid_hours"] == 10.0
-    # 10 h at 50/h from the paid ship, plus the mission's flat 30.
-    assert stats["estimated_pending_stardust"] == 530
+    assert stats["estimated_pending_stardust"] == 500  # 10 h at 50/h
+    assert stats["estimated_total_stardust"] == 730    # 200 + 30 awarded + 500
+
+
+def test_a_mission_award_lands_in_the_headline_total():
+    """The bug: a project whose only ship is a mission ship read as zero."""
+    ships = [ship(1, mission="slack-bot", hours=6.0)]
+    stats = build_stats(PROJECT, DEVLOGS, ships, MISSIONS)
+
+    assert stats["stardust_total"] == 30
+    assert stats["voted_stardust"] == 0
+    assert stats["mission_stardust"] == 30
+    # The award has no hourly basis, so it must not invent a rate.
+    assert stats["stardust_per_paid_hour"] is None
+
+
+def test_a_rated_payout_keeps_its_own_basis():
+    ships = [
+        ship(1, mission="slack-bot", hours=6.0),
+        ship(2, hours=4.0, payout=200),
+    ]
+    stats = build_stats(PROJECT, DEVLOGS, ships, MISSIONS)
+
+    assert stats["stardust_total"] == 230
+    # 200 over 4 paid hours; the mission's 30 is not part of the rate.
+    assert stats["stardust_per_paid_hour"] == 50.0
 
 
 def test_without_the_mission_the_same_ships_are_overvalued():

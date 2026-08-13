@@ -88,7 +88,7 @@ async def requeue_mission_projects(
 def assign_payout_paths(
     ships: list[dict[str, Any]], missions: dict[str, dict[str, Any]]
 ) -> None:
-    """Stamp each ship with the path its mission pays it through."""
+    """Stamp each ship with the path its mission pays it through, and what it pays."""
     claimed: set[str] = set()
 
     for ship in sorted(ships, key=_ship_order):
@@ -108,6 +108,33 @@ def assign_payout_paths(
         if slug:
             claimed.add(slug)
         ship["payout_path"] = path
+        _assign_mission_stardust(ship, terms or {}, path)
+
+
+def _assign_mission_stardust(
+    ship: dict[str, Any], terms: dict[str, Any], path: str
+) -> None:
+    """Split what the mission owes this ship into awarded and awaiting approval."""
+    ship["mission_stardust"] = None
+    ship["mission_pending_stardust"] = None
+
+    if path == PAYOUT_STATIC:
+        award = terms.get("fixed_stardust")
+    elif path == PAYOUT_FLAT:
+        rate = terms.get("stardust_per_hour")
+        award = round((ship.get("hours_at_ship") or 0.0) * rate) if rate else None
+    else:
+        return
+
+    if not award:
+        return
+
+    # No payout renders for these, so approval is the only sign one landed.
+    status = ship.get("status") or "approved"
+    if status == "approved":
+        ship["mission_stardust"] = award
+    elif status != "returned":
+        ship["mission_pending_stardust"] = award
 
 
 def _ship_order(ship: dict[str, Any]) -> tuple[int, float]:
@@ -116,31 +143,34 @@ def _ship_order(ship: dict[str, Any]) -> tuple[int, float]:
     return (number if number is not None else 1 << 30, stamp.timestamp() if stamp else 0.0)
 
 
-def mission_pending(
+def mission_payout(
     ships: list[dict[str, Any]], missions: dict[str, dict[str, Any]]
 ) -> dict[str, Any]:
-    """Hours that a mission pays for directly, and what they are worth."""
+    """Hours a mission pays for directly, and what it has paid for them."""
     fixed_hours = flat_hours = 0.0
-    stardust = 0.0
+    stardust = pending = 0
 
     for ship in ships:
         if ship.get("payout") is not None:
             continue
         hours = ship.get("hours_at_ship") or 0.0
-        terms = missions.get(ship.get("mission_slug")) or {}
 
         if ship.get("payout_path") == PAYOUT_STATIC:
             fixed_hours += hours
-            stardust += terms.get("fixed_stardust") or 0
         elif ship.get("payout_path") == PAYOUT_FLAT:
             flat_hours += hours
-            stardust += hours * (terms.get("stardust_per_hour") or 0)
+        else:
+            continue
+
+        stardust += ship.get("mission_stardust") or 0
+        pending += ship.get("mission_pending_stardust") or 0
 
     return {
         "fixed_payout_hours": round(fixed_hours, 2),
         "flat_rate_hours": round(flat_hours, 2),
         "hours": round(fixed_hours + flat_hours, 2),
-        "stardust": round(stardust),
+        "stardust": stardust,
+        "pending_stardust": pending,
     }
 
 

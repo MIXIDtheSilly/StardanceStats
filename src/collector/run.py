@@ -9,6 +9,7 @@ from typing import Any, Callable, Sequence
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from .. import blacklist
 from .. import db as database
 from ..config import settings
 from ..fetcher import CircuitOpen, Fetcher
@@ -308,6 +309,25 @@ async def run_backfill(db: AsyncIOMotorDatabase, fetcher: Fetcher) -> None:
         log.exception("backfill failed")
 
 
+async def purge_blacklist(db: AsyncIOMotorDatabase) -> dict[str, Any]:
+    """Drop blacklisted accounts and re-total whoever their rows counted towards."""
+    if not blacklist.user_ids():
+        return {}
+
+    result = await blacklist.purge(db)
+    log.info(
+        "blacklist purge: users %s, %d project(s), %s",
+        result["users"], len(result["projects"]), result["deleted"],
+    )
+
+    for user_id in result["affected_users"]:
+        try:
+            await recompute_user_totals(db, user_id)
+        except Exception:
+            log.exception("recompute failed for user %s", user_id)
+    return result
+
+
 async def extend_scan(db: AsyncIOMotorDatabase) -> dict[str, Any]:
     """Queue the id ranges the sitemap leaves out. No network of its own."""
     out = {}
@@ -374,6 +394,7 @@ async def main() -> None:
     )
     await database.bootstrap()
     db = database.get_db()
+    await purge_blacklist(db)
 
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()

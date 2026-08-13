@@ -3,7 +3,7 @@ from .mission import (
     assign_payout_paths,
     ingest_mission,
     load_missions,
-    mission_pending,
+    mission_payout,
     requeue_mission_projects,
 )
 from .project import (
@@ -49,7 +49,7 @@ __all__ = [
     "ingest_user",
     "link_user_id",
     "load_missions",
-    "mission_pending",
+    "mission_payout",
     "missing_project_ids",
     "payout_hours",
     "recompute_all_users",
