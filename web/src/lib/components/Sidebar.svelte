@@ -10,13 +10,18 @@
 
 	const TABS = [
 		{ label: 'Global', href: '/global', accent: 'var(--color-brand-mint)', ready: true },
-		{ label: 'People', href: '/people', accent: 'var(--color-brand-lilac)', ready: false },
+		{ label: 'People', href: '/people', accent: 'var(--color-brand-lilac)', ready: true },
 		{ label: 'Projects', href: '/projects', accent: 'var(--color-brand-blue)', ready: false },
 		{ label: 'Shop', href: '/shop', accent: 'var(--color-brand-yellow)', ready: false },
 		{ label: 'Ask', href: '/ask', accent: 'var(--color-brand-salmon)', ready: false }
 	];
 
 	let current = $derived(page.url.pathname);
+
+	// A person or project page still belongs to the tab it sits under.
+	function within(href: string): boolean {
+		return current === href || current.startsWith(`${href}/`);
+	}
 </script>
 
 <aside class="side">
@@ -29,10 +34,10 @@
 			{#if tab.ready}
 				<a
 					class="tab"
-					class:tab--on={current === tab.href}
+					class:tab--on={within(tab.href)}
 					href={tab.href}
 					style="--accent: {tab.accent}"
-					aria-current={current === tab.href ? 'page' : undefined}
+					aria-current={within(tab.href) ? 'page' : undefined}
 				>
 					{tab.label}
 				</a>
@@ -48,7 +53,7 @@
 		{#if lastCrawl}
 			<span>last crawl {relative(lastCrawl)}</span>
 		{/if}
-		<a href="/api/docs">API docs</a>
+		<!-- <a href="/api/docs">API docs</a> -->
 	</footer>
 </aside>
 

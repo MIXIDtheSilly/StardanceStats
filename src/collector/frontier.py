@@ -62,6 +62,31 @@ async def due(
     return [row async for row in cursor]
 
 
+async def mark_all_due(
+    db: AsyncIOMotorDatabase,
+    *,
+    kind: str | None = None,
+    include_gone: bool = False,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Bring every row forward to now, so a full sweep reads the whole site."""
+    now = now or utcnow()
+    query: dict[str, Any] = {}
+    if kind:
+        query["kind"] = kind
+    if not include_gone:
+        query["gone"] = {"$ne": True}
+
+    total = await db.crawl_frontier.count_documents(query)
+    update: dict[str, Any] = {"$set": {"next_due": now}}
+    if include_gone:
+        # A page that came back is not gone, and due() skips rows that say it is.
+        update["$unset"] = {"gone": ""}
+
+    result = await db.crawl_frontier.update_many(query, update)
+    return {"matched": total, "marked": result.modified_count, "as_of": now}
+
+
 async def max_ref_id(
     db: AsyncIOMotorDatabase, kind: str, *, listed_only: bool = False
 ) -> int:

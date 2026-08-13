@@ -1,6 +1,9 @@
 <script lang="ts">
+	import { fade } from 'svelte/transition';
 	import Chart from '$components/Chart.svelte';
-	import { compact, full, percent, relative, signed } from '$lib/format';
+	import RangePicker from '$components/RangePicker.svelte';
+	import ErrorState from '$components/ErrorState.svelte';
+	import { compact, full, relative, signed } from '$lib/format';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -16,39 +19,44 @@
 		{ key: 'views', label: 'Views', color: 'var(--color-brand-mint)' }
 	];
 
+	// The server fetches the widest window, so every range below is a slice of what we already hold.
+	const RANGES = [1, 3, 7, 14, 30];
+
 	let selected = $state('devlogs');
+	let range = $state(7);
 
 	let totals = $derived(data.totals?.totals ?? {});
 	let series = $derived(data.history?.series ?? {});
 	let active = $derived(METRICS.find((m) => m.key === selected) ?? METRICS[0]);
-	let points = $derived(series[selected] ?? []);
+	let points = $derived(windowed(selected));
 
 	// from/to describe the axis we asked for; only the points say what was observed.
 	function observedPoints(key: string) {
 		return (series[key] ?? []).filter((p) => Number.isFinite(p.v));
 	}
 
-	// The tiles report the latest day, not the whole window the chart plots.
-	function movement(key: string): { delta: number; days: number } | null {
+	// Buckets are hourly, so the window is measured off the newest point rather than counted out.
+	function windowed(key: string) {
 		const observed = observedPoints(key);
-		if (observed.length < 2) return null;
-		const last = observed[observed.length - 1];
-		const prev = observed[observed.length - 2];
+		const last = observed.at(-1);
+		if (!last) return [];
+		const cutoff = Date.parse(last.ts) - range * 86_400_000;
+		return observed.filter((p) => Date.parse(p.ts) >= cutoff);
+	}
+
+	function movement(key: string): { delta: number; days: number } | null {
+		const window = windowed(key);
+		if (window.length < 2) return null;
+		const first = window[0];
+		const last = window[window.length - 1];
 		return {
-			delta: last.v - prev.v,
-			days: Math.max(1, Math.round((Date.parse(last.ts) - Date.parse(prev.ts)) / 86_400_000))
+			delta: last.v - first.v,
+			days: Math.max(1, Math.round((Date.parse(last.ts) - Date.parse(first.ts)) / 86_400_000))
 		};
 	}
 
-	function observedSpan(key: string): number | null {
-		const observed = observedPoints(key);
-		if (observed.length < 2) return null;
-		const from = Date.parse(observed[0].ts);
-		const to = Date.parse(observed[observed.length - 1].ts);
-		return Math.max(1, Math.round((to - from) / 86_400_000));
-	}
-
-	let span = $derived(observedSpan(selected) ?? data.windowDays);
+	// History rarely reaches back the full range yet, so say what was actually plotted.
+	let span = $derived(movement(selected)?.days ?? 0);
 
 </script>
 
@@ -69,8 +77,12 @@
 	</header>
 
 	{#if data.totals}
-		<section class="figures">
-			{#each METRICS as metric (metric.key)}
+		<div class="figures-wrap">
+			<!-- Outside .figures so the grid's own clipping does not cut them in half. -->
+			<img class="perch perch--users" src="/star-creature.png" alt="" aria-hidden="true" />
+			<img class="perch perch--views" src="/star-creature-blue.png" alt="" aria-hidden="true" />
+			<section class="figures">
+				{#each METRICS as metric (metric.key)}
 				{@const moved = movement(metric.key)}
 				<button
 					class="figure"
@@ -88,39 +100,27 @@
 				</button>
 			{/each}
 		</section>
+		</div>
 
 		<section class="panel">
 			<div class="panel__head">
 				<h2 style="color: {active.color}">{active.label}</h2>
-				<span class="muted">last {span} days, daily</span>
+				<div class="panel__controls">
+					{#if span && span < range}
+						<span class="muted">only {span}d observed</span>
+					{/if}
+					<RangePicker options={RANGES} bind:value={range} label="Chart range" />
+				</div>
 			</div>
-			<Chart {points} color={active.color} />
+			{#key `${selected}-${range}`}
+				<div in:fade={{ duration: 160 }}>
+					<Chart {points} color={active.color} />
+				</div>
+			{/key}
 		</section>
 
-		{#if data.meta}
-			{@const cov = data.meta.coverage}
-			<section class="notes">
-				<!-- tracked landed after the first deploy, so an older API omits it. -->
-				{#if cov.projects_tracked}
-					<span>
-						{percent(cov.projects_crawled, cov.projects_tracked)} of
-						{full(cov.projects_tracked)} projects crawled
-					</span>
-				{/if}
-				{#if cov.users_tracked}
-					<span>
-						{percent(cov.users_crawled, cov.users_tracked)} of
-						{full(cov.users_tracked)} users crawled
-					</span>
-				{/if}
-				<span>{full(cov.users_complete)} profiles fully resolved</span>
-			</section>
-		{/if}
 	{:else}
-		<section class="cold">
-			<p>No rollup written yet, so there is nothing to plot.</p>
-			<pre><code>python -m src.collector.run</code></pre>
-		</section>
+		<ErrorState code="API error" actionLabel="Refresh" />
 	{/if}
 </div>
 
@@ -149,11 +149,36 @@
 		font-size: var(--font-size-s);
 	}
 
+	.figures-wrap {
+		position: relative;
+		margin: var(--space-l) 0;
+	}
+
+	.perch {
+		position: absolute;
+		height: auto;
+		pointer-events: none;
+	}
+
+	.perch--users {
+		left: 0;
+		top: 0;
+		width: 5rem;
+		transform: translate(-25%, -53%);
+	}
+
+	/* This art fills its canvas, so it hangs off the bottom-right corner as drawn. */
+	.perch--views {
+		right: 0;
+		bottom: 0;
+		width: 4rem;
+		transform: translate(-20%, 90%);
+	}
+
 	.figures {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 1px;
-		margin: var(--space-l) 0;
 		background: var(--color-space-surface-faint);
 		border: 1px solid var(--color-space-surface-faint);
 		border-radius: var(--radius);
@@ -225,38 +250,16 @@
 		font-size: var(--font-size-l);
 	}
 
+	.panel__controls {
+		display: flex;
+		align-items: center;
+		gap: var(--space-s);
+	}
+
 	.panel__head span {
 		font-size: var(--font-size-xs);
 	}
 
-	.notes {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--space-m);
-		margin-top: var(--space-l);
-		font-size: var(--font-size-xs);
-		color: var(--color-set-1-fg-secondary);
-	}
-
-	.cold {
-		margin-top: var(--space-xl);
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-s);
-	}
-
-	.cold pre {
-		padding: var(--space-s) var(--space-m);
-		border-radius: var(--radius);
-		background: var(--color-set-1-bg);
-		overflow-x: auto;
-	}
-
-	.cold code {
-		font-family: var(--font-mono);
-		font-size: var(--font-size-s);
-		color: var(--color-brand-cream);
-	}
 
 	@media (max-width: 720px) {
 		.figures {

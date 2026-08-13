@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...collector.frontier import queue_depth
@@ -15,7 +15,14 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def health(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
+async def health(
+    deep: bool = Query(
+        False,
+        description="Add the queue depth and error rate. Both read the whole "
+        "frontier, so they are off by default: this endpoint is polled.",
+    ),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
     """Liveness plus collector freshness: is the data actually moving?"""
     now = utcnow()
     try:
@@ -32,19 +39,13 @@ async def health(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     last_crawl = last.get("last_crawled") if last else None
     stale = last_crawl is None or (now - last_crawl) > timedelta(hours=24)
 
-    errors = await db.crawl_log.count_documents(
-        {"ts": {"$gte": now - timedelta(hours=1)}, "status": {"$ne": "ok"}}
-    )
-
     sitemap = await db.crawl_state.find_one({"_id": "sitemap"}) or {}
 
-    return {
+    out: dict[str, Any] = {
         "status": "degraded" if stale else "ok",
         "mongo": mongo_ok,
         "last_crawl": last_crawl,
         "stale": stale,
-        "errors_last_hour": errors,
-        "queue": await queue_depth(db, now=now),
         "sitemap": {
             "last_checked": sitemap.get("last_checked"),
             "last_synced": sitemap.get("last_synced"),
@@ -52,6 +53,14 @@ async def health(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
         },
         "now": now,
     }
+
+    if deep:
+        out["errors_last_hour"] = await db.crawl_log.count_documents(
+            {"ts": {"$gte": now - timedelta(hours=1)}, "status": {"$ne": "ok"}}
+        )
+        out["queue"] = await queue_depth(db, now=now)
+
+    return out
 
 
 @router.get("/meta")

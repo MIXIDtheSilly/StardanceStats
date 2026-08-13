@@ -5,12 +5,15 @@ from pathlib import Path
 
 import pytest
 
+from selectolax.parser import HTMLParser
+
 from src.ingest.project import (
     DEVLOG_TRACKED,
     _day_range,
     _devlog_snapshot,
     _devlog_snapshot_due,
     build_stats,
+    card_sum_drops,
     check_anomalies,
     estimate_unpaid,
     payout_hours,
@@ -161,6 +164,37 @@ def test_parse_misses_are_reported(stats):
     result.missing.add("devlog.likes")
     reasons = check_anomalies(stats, stats, result)
     assert any("unparsed fields" in r for r in reasons)
+
+
+def test_a_short_render_deflates_card_sums_unchallenged(parsed, stats):
+    """One card missing costs its views, and the header count still agrees."""
+    tree = HTMLParser(FIXTURE.read_text(encoding="utf-8"))
+    for card in tree.css("article.feed-post-card"):
+        if card.attributes.get("data-feed-engagement-post-type-value") == "Post::Devlog":
+            card.decompose()
+            break
+
+    short = parse_project_page(tree.html, 8100)
+    short_stats = build_stats(
+        short.data["project"], short.data["devlogs"], short.data["ships"]
+    )
+
+    assert short_stats["views"] < stats["views"]
+    assert short_stats["devlogs"] == stats["devlogs"]
+    assert check_anomalies(short_stats, stats, short) == []
+
+
+def test_card_sums_falling_is_recorded(stats):
+    dipped = dict(stats, views=stats["views"] - 144, likes=stats["likes"] - 2)
+    drops = card_sum_drops(dipped, stats)
+    assert {d["metric"] for d in drops} == {"views", "likes"}
+    assert next(d["by"] for d in drops if d["metric"] == "views") == 144
+
+
+def test_card_sums_holding_or_growing_is_not_recorded(stats):
+    assert card_sum_drops(stats, stats) == []
+    assert card_sum_drops(dict(stats, views=stats["views"] + 10), stats) == []
+    assert card_sum_drops(stats, None) == []
 
 
 def test_day_range_is_inclusive_and_utc_midnight():

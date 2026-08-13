@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from ...db import LEADERBOARD_FIELDS
 from ..deps import db as db_dep
 from ..services import HistoryError, Interval, bucketed_series, stamp
 from ..services.history import METRICS, parse_metrics
@@ -14,27 +16,7 @@ router = APIRouter()
 
 USER_METRICS = METRICS["user"].metrics
 
-# totals.* is computed from our crawled rows, stats.* comes off the profile.
-LEADERBOARD_METRICS = {
-    "ship_stardust": "totals.ship_stardust",
-    "hours": "totals.hours",
-    "shipped_hours": "totals.shipped_hours",
-    "paid_hours": "totals.paid_hours",
-    "likes_received": "totals.likes_received",
-    "comments_received": "totals.comments_received",
-    "comments_sent": "totals.comments_sent",
-    "comments_to_others": "totals.comments_to_others",
-    "comment_threads": "totals.comment_threads",
-    "projects_commented": "totals.projects_commented",
-    "views_received": "totals.views_received",
-    "best_multiplier": "totals.best_multiplier",
-    "stardust_per_paid_hour": "totals.stardust_per_paid_hour",
-    "estimated_total_stardust": "totals.estimated_total_stardust",
-    "followers": "stats.followers",
-    "devlogs": "stats.devlogs",
-    "ships": "stats.ships",
-    "projects": "stats.projects",
-}
+LEADERBOARD_METRICS = LEADERBOARD_FIELDS
 
 def _oldest_crawl(rows: list[dict[str, Any]]) -> datetime | None:
     return min((r["last_crawled"] for r in rows if r.get("last_crawled")), default=None)
@@ -57,6 +39,89 @@ async def _find_user(db: AsyncIOMotorDatabase, ref: str) -> dict[str, Any]:
         return doc
 
     raise HTTPException(404, f"user {ref!r} not tracked")
+
+
+def _escape(term: str) -> str:
+    """Regex-quote a handle so a search for a.b cannot match aXb."""
+    return re.escape(term)
+
+
+# Declared above /users/{ref} so "search" is not read as a handle.
+@router.get("/users/search")
+async def search_users(
+    q: str = Query(..., min_length=1, max_length=64, description="Part of a handle."),
+    limit: int = Query(10, ge=1, le=50),
+    metric: str = Query("ship_stardust", description="Which ranking the rank belongs to."),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
+    """Handles that start with, then merely contain, what was typed."""
+    field = LEADERBOARD_METRICS.get(metric)
+    if field is None:
+        raise HTTPException(
+            400, f"unknown metric {metric!r}; valid: {sorted(LEADERBOARD_METRICS)}"
+        )
+
+    term = _escape(q.strip().lstrip("@").lower())
+    if not term:
+        raise HTTPException(400, "nothing to search for")
+
+    fields = {"username": 1, "avatar_url": 1, "stats": 1, "totals": 1, "last_crawled": 1}
+    seen: list[dict[str, Any]] = []
+    ids: set[int] = set()
+
+    # The contains pass cannot use the index, so it only runs on what the prefix pass missed.
+    for pattern in (f"^{term}", term):
+        if len(seen) >= limit:
+            break
+        query = {
+            "username_lower": {"$regex": pattern},
+            "hidden": {"$ne": True},
+            "_id": {"$nin": list(ids)},
+        }
+        cursor = db.users.find(query, fields).sort([("username_lower", 1)]).limit(limit - len(seen))
+        for row in await cursor.to_list(length=limit):
+            ids.add(row["_id"])
+            seen.append(row)
+
+    section, key = field.split(".", 1)
+    ranks = await _ranks(db, field, [(row.get(section) or {}).get(key) for row in seen])
+
+    items = [
+        {
+            "user_id": row["_id"],
+            "username": row.get("username"),
+            "avatar_url": row.get("avatar_url"),
+            "value": (row.get(section) or {}).get(key),
+            "rank": ranks[index],
+            "stats": row.get("stats") or {},
+            "totals": row.get("totals") or {},
+            # An exact hit should lead however the sort fell.
+            "exact": (row.get("username") or "").lower() == q.strip().lstrip("@").lower(),
+        }
+        for index, row in enumerate(seen)
+    ]
+    items.sort(key=lambda item: (not item["exact"], item["username"] or ""))
+
+    return stamp(
+        {"query": q, "metric": metric, "total": len(items), "items": items},
+        _oldest_crawl(seen),
+    )
+
+
+async def _ranks(
+    db: AsyncIOMotorDatabase, field: str, values: list[Any]
+) -> list[int | None]:
+    """Standing each value would take, from 1; a tie takes the better place."""
+    distinct = {v for v in values if isinstance(v, (int, float))}
+    ahead = {
+        value: await db.users.count_documents(
+            {field: {"$gt": value}, "hidden": {"$ne": True}}
+        )
+        for value in distinct
+    }
+    return [
+        ahead[value] + 1 if isinstance(value, (int, float)) else None for value in values
+    ]
 
 
 @router.get("/users/{ref}")

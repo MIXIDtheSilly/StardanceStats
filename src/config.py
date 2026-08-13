@@ -73,11 +73,11 @@ class Settings(BaseSettings):
 
     tier_hot_days: int = 3
     tier_warm_days: int = 30
-    tier_hot_hours: float = 6.0
-    tier_warm_hours: float = 24.0
-    tier_cold_hours: float = 24.0 * 7
-    tier_frozen_hours: float = 24.0 * 30
-    # This, not the lastmod window, is what makes 30k pages fit in a day.
+    # The image carries no .env, so these defaults are what the containers run on.
+    tier_hot_hours: float = 1.0
+    tier_warm_hours: float = 3.0
+    tier_cold_hours: float = 6.0
+    tier_frozen_hours: float = 24.0
     # Quiet time, not crawl count, so a faster tier cannot demote sooner.
     cold_after_unchanged_hours: float = 30.0
 
@@ -104,8 +104,8 @@ class Settings(BaseSettings):
     snapshot_heartbeat_hours: int = 24
     anomaly_drop_threshold: float = 0.20
 
-    # Tiers crawl every 6 h to 7 d, so two quiet days is worth telling a reader.
-    api_stale_after_hours: float = 48.0
+    # Every tier comes back within 6 h, so a gap twice that means something stalled.
+    api_stale_after_hours: float = 12.0
     api_cache_seconds: int = 300
 
     @property

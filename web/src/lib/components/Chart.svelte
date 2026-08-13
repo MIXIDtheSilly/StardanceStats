@@ -38,19 +38,26 @@
 			return { y: PAD.top + t * innerH, label: compact(v) };
 		});
 
+		// Hourly buckets repeat the same date all the way across a short window.
+		const spanMs = Date.parse(values.at(-1)!.ts) - Date.parse(values[0].ts);
 		const label = (iso: string) =>
-			new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+			spanMs <= 2 * 86_400_000
+				? new Date(iso).toLocaleTimeString('en', { hour: 'numeric', minute: '2-digit' })
+				: new Date(iso).toLocaleDateString('en', { month: 'short', day: 'numeric' });
+
+		// A two-point window puts the midpoint on top of the first, so collapse the repeats.
+		const marks = [...new Set([0, Math.floor((values.length - 1) / 2), values.length - 1])];
 
 		return {
 			line: `M${coords.join('L')}`,
 			area: `M${x(0)},${H - PAD.bottom} L${coords.join('L')} L${x(values.length - 1)},${H - PAD.bottom} Z`,
 			ticks,
 			last: { x: x(values.length - 1), y: y(values.at(-1)!.v) },
-			xLabels: [
-				{ x: x(0), text: label(values[0].ts), anchor: 'start' },
-				{ x: x(Math.floor((values.length - 1) / 2)), text: label(values[Math.floor((values.length - 1) / 2)].ts), anchor: 'middle' },
-				{ x: x(values.length - 1), text: label(values.at(-1)!.ts), anchor: 'end' }
-			]
+			xLabels: marks.map((i, n) => ({
+				x: x(i),
+				text: label(values[i].ts),
+				anchor: n === 0 ? 'start' : n === marks.length - 1 ? 'end' : 'middle'
+			}))
 		};
 	});
 </script>
@@ -67,7 +74,7 @@
 		<path d={plot.line} fill="none" stroke={color} stroke-width="2" stroke-linejoin="round" />
 		<circle cx={plot.last.x} cy={plot.last.y} r="3.5" fill={color} />
 
-		{#each plot.xLabels as label (label.x)}
+		{#each plot.xLabels as label, i (i)}
 			<text x={label.x} y={H - 8} class="axis" text-anchor={label.anchor}>{label.text}</text>
 		{/each}
 	</svg>

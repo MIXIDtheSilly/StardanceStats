@@ -12,6 +12,29 @@ log = logging.getLogger(__name__)
 
 _client: AsyncIOMotorClient | None = None
 
+# Lives here so the indexes below and the API's rankings cannot drift apart.
+LEADERBOARD_FIELDS: dict[str, str] = {
+    "ship_stardust": "totals.ship_stardust",
+    "hours": "totals.hours",
+    "shipped_hours": "totals.shipped_hours",
+    "paid_hours": "totals.paid_hours",
+    "likes_received": "totals.likes_received",
+    "comments_received": "totals.comments_received",
+    "comments_sent": "totals.comments_sent",
+    "comments_to_others": "totals.comments_to_others",
+    "comment_threads": "totals.comment_threads",
+    "projects_commented": "totals.projects_commented",
+    "views_received": "totals.views_received",
+    "best_multiplier": "totals.best_multiplier",
+    "stardust_per_paid_hour": "totals.stardust_per_paid_hour",
+    "estimated_total_stardust": "totals.estimated_total_stardust",
+    "followers": "stats.followers",
+    "following": "stats.following",
+    "devlogs": "stats.devlogs",
+    "ships": "stats.ships",
+    "projects": "stats.projects",
+}
+
 # name -> (timeField, metaField)
 TIMESERIES: dict[str, tuple[str, str]] = {
     "user_snapshots": ("ts", "uid"),
@@ -38,6 +61,27 @@ async def close() -> None:
     if _client is not None:
         _client.close()
         _client = None
+
+
+async def _ensure_index(coll, keys: list[tuple[str, int]], **opts) -> None:
+    """create_index, tolerating an existing index that differs only in options."""
+    try:
+        await coll.create_index(keys, **opts)
+        return
+    except OperationFailure as exc:
+        # 85/86: an older definition of this same key or name is in the way.
+        if exc.code not in (85, 86):
+            raise
+
+    name = opts.get("name") or "_".join(f"{field}_{order}" for field, order in keys)
+    for spec in await coll.list_indexes().to_list(length=None):
+        if spec["name"] == "_id_":
+            continue
+        same_key = [(f, int(o)) for f, o in spec["key"].items()] == list(keys)
+        if spec["name"] == name or same_key:
+            await coll.drop_index(spec["name"])
+            log.info("dropped stale index %s.%s", coll.name, spec["name"])
+    await coll.create_index(keys, **opts)
 
 
 async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
@@ -70,57 +114,68 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
         except (CollectionInvalid, OperationFailure):
             pass
 
-    await db.users.create_index([("username_lower", ASCENDING)], unique=True, sparse=True)
-    await db.users.create_index([("stats.followers", DESCENDING)])
-    await db.users.create_index([("stats.stardust_earned", DESCENDING)])
-    await db.users.create_index([("last_crawled", ASCENDING)])
+    await _ensure_index(db.users, [("username_lower", ASCENDING)], unique=True, sparse=True)
+    await _ensure_index(db.users, [("last_crawled", ASCENDING)])
+    # Every ranking sorts on one of these, and a rank is a count over one of them.
+    for field in dict.fromkeys(LEADERBOARD_FIELDS.values()):
+        await _ensure_index(db.users, [(field, DESCENDING)], sparse=True)
 
-    await db.projects.create_index([("owner_id", ASCENDING)])
-    await db.projects.create_index([("stats.stardust_total", DESCENDING)])
-    await db.projects.create_index([("stats.total_hours", DESCENDING)])
-    await db.projects.create_index([("ship_status", ASCENDING)])
-    await db.projects.create_index([("is_super_star", ASCENDING)])
-    await db.projects.create_index([("mission.slug", ASCENDING)], sparse=True)
-    await db.projects.create_index([("last_crawled", ASCENDING)])
+    await _ensure_index(db.projects, [("owner_id", ASCENDING)])
+    await _ensure_index(db.projects, [("stats.stardust_total", DESCENDING)])
+    await _ensure_index(db.projects, [("stats.total_hours", DESCENDING)])
+    await _ensure_index(db.projects, [("ship_status", ASCENDING)])
+    await _ensure_index(db.projects, [("is_super_star", ASCENDING)])
+    await _ensure_index(db.projects, [("mission.slug", ASCENDING)], sparse=True)
+    await _ensure_index(db.projects, [("last_crawled", ASCENDING)])
 
-    await db.devlogs.create_index([("project_id", ASCENDING), ("posted_at", DESCENDING)])
-    await db.devlogs.create_index([("user_id", ASCENDING), ("posted_at", DESCENDING)])
-    await db.devlogs.create_index([("username_lower", ASCENDING), ("posted_at", DESCENDING)])
-    await db.devlogs.create_index([("likes", DESCENDING)])
-    # The comment sweep's only query.
-    await db.devlogs.create_index([("comments_stale", ASCENDING)], sparse=True)
-
-    await db.comments.create_index([("devlog_id", ASCENDING), ("position", ASCENDING)])
-    await db.comments.create_index([("user_id", ASCENDING), ("posted_at", DESCENDING)])
-    await db.comments.create_index(
-        [("username_lower", ASCENDING), ("posted_at", DESCENDING)]
+    await _ensure_index(db.devlogs, [("project_id", ASCENDING), ("posted_at", DESCENDING)])
+    await _ensure_index(db.devlogs, [("user_id", ASCENDING), ("posted_at", DESCENDING)])
+    await _ensure_index(
+        db.devlogs, [("username_lower", ASCENDING), ("posted_at", DESCENDING)]
     )
-    await db.comments.create_index([("project_id", ASCENDING), ("posted_at", DESCENDING)])
-    await db.comments.create_index([("posted_at", DESCENDING)])
+    await _ensure_index(db.devlogs, [("likes", DESCENDING)])
+    # The comment sweep's only query.
+    await _ensure_index(db.devlogs, [("comments_stale", ASCENDING)], sparse=True)
 
-    await db.ships.create_index([("project_id", ASCENDING), ("ship_number", ASCENDING)])
-    await db.ships.create_index([("username_lower", ASCENDING)])
-    await db.ships.create_index([("shipped_at", DESCENDING)])
-    await db.ships.create_index([("mission_slug", ASCENDING)], sparse=True)
-    await db.ships.create_index([("payout_path", ASCENDING)], sparse=True)
+    await _ensure_index(db.comments, [("devlog_id", ASCENDING), ("position", ASCENDING)])
+    await _ensure_index(db.comments, [("user_id", ASCENDING), ("posted_at", DESCENDING)])
+    await _ensure_index(
+        db.comments, [("username_lower", ASCENDING), ("posted_at", DESCENDING)]
+    )
+    await _ensure_index(
+        db.comments, [("project_id", ASCENDING), ("posted_at", DESCENDING)]
+    )
+    await _ensure_index(db.comments, [("posted_at", DESCENDING)])
 
-    await db.shop_items.create_index([("price_min", ASCENDING)])
-    await db.shop_items.create_index([("price_spread", DESCENDING)])
-    await db.shop_items.create_index([("regions", ASCENDING)])
-    await db.shop_items.create_index([("categories", ASCENDING)])
-    await db.shop_items.create_index([("on_sale", ASCENDING)], sparse=True)
+    await _ensure_index(db.ships, [("project_id", ASCENDING), ("ship_number", ASCENDING)])
+    await _ensure_index(db.ships, [("username_lower", ASCENDING)])
+    await _ensure_index(db.ships, [("shipped_at", DESCENDING)])
+    await _ensure_index(db.ships, [("mission_slug", ASCENDING)], sparse=True)
+    await _ensure_index(db.ships, [("payout_path", ASCENDING)], sparse=True)
 
-    await db.missions.create_index([("payout_path", ASCENDING)])
-    await db.missions.create_index([("last_crawled", ASCENDING)])
+    await _ensure_index(db.shop_items, [("price_min", ASCENDING)])
+    await _ensure_index(db.shop_items, [("price_spread", DESCENDING)])
+    await _ensure_index(db.shop_items, [("regions", ASCENDING)])
+    await _ensure_index(db.shop_items, [("categories", ASCENDING)])
+    await _ensure_index(db.shop_items, [("on_sale", ASCENDING)], sparse=True)
+
+    await _ensure_index(db.missions, [("payout_path", ASCENDING)])
+    await _ensure_index(db.missions, [("last_crawled", ASCENDING)])
 
     # The collector's only hot query.
-    await db.crawl_frontier.create_index(
-        [("kind", ASCENDING), ("priority", ASCENDING), ("next_due", ASCENDING)]
+    await _ensure_index(
+        db.crawl_frontier,
+        [("kind", ASCENDING), ("priority", ASCENDING), ("next_due", ASCENDING)],
     )
-    await db.crawl_frontier.create_index(
-        [("priority", ASCENDING), ("next_due", ASCENDING)]
+    await _ensure_index(
+        db.crawl_frontier, [("priority", ASCENDING), ("next_due", ASCENDING)]
     )
-    await db.crawl_frontier.create_index([("tier", ASCENDING)])
-    await db.crawl_frontier.create_index([("sitemap_sync", ASCENDING)])
+    await _ensure_index(db.crawl_frontier, [("tier", ASCENDING)])
+    await _ensure_index(db.crawl_frontier, [("sitemap_sync", ASCENDING)])
+    # health counts the never-crawled rows, which is an equality on null.
+    await _ensure_index(db.crawl_frontier, [("last_crawled", ASCENDING)])
+
+    # Capped and always full, so the error-rate count reads all 64 MB without this.
+    await _ensure_index(db.crawl_log, [("ts", DESCENDING)])
 
     log.info("bootstrap complete on db=%s", settings.mongo_db)

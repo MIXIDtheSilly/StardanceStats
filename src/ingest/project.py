@@ -16,6 +16,9 @@ log = logging.getLogger(__name__)
 # A large fall means a parse failure; a small one is ordinary moderation.
 MONOTONIC = ("devlogs", "total_hours", "stardust_total", "ships")
 
+# Re-summed from the rendered cards, so a short render deflates them.
+CARD_SUMMED = ("views", "likes", "comments", "reposts")
+
 # Fields whose change is worth a new snapshot.
 TRACKED = (
     "devlogs", "total_hours", "shipped_hours", "paid_hours", "followers",
@@ -168,6 +171,23 @@ def check_anomalies(
     return reasons
 
 
+def card_sum_drops(
+    new_stats: dict[str, Any], previous: dict[str, Any] | None
+) -> list[dict[str, Any]]:
+    """Card-summed totals that fell. Moderation does this, but so does a short render."""
+    if not previous:
+        return []
+
+    drops = []
+    for key in CARD_SUMMED:
+        old, new = previous.get(key), new_stats.get(key)
+        if not isinstance(old, (int, float)) or not isinstance(new, (int, float)):
+            continue
+        if new < old:
+            drops.append({"metric": key, "from": old, "to": new, "by": old - new})
+    return drops
+
+
 async def ingest_project(
     db: AsyncIOMotorDatabase,
     result: ParseResult,
@@ -198,6 +218,22 @@ async def ingest_project(
     if reasons and existing is not None:
         await _log_crawl(db, pid, "anomaly", now, reasons=reasons)
         raise AnomalyRejected(f"project {pid}: " + "; ".join(reasons))
+
+    # Logged rather than rejected, so a dip in a global total can be traced back here.
+    drops = card_sum_drops(stats, previous_stats)
+    if drops:
+        claimed = project.get("devlogs_count")
+        parsed = project.get("parsed_devlogs")
+        await _log_crawl(
+            db, pid, "sum_drop", now,
+            drops=drops, devlogs_claimed=claimed, devlogs_parsed=parsed,
+        )
+        log.warning(
+            "project %s card sums fell (%s) with %s of %s devlog cards rendered",
+            pid,
+            ", ".join(f"{d['metric']} {d['from']}->{d['to']}" for d in drops),
+            parsed, claimed,
+        )
 
     first_ingest = existing is None
 

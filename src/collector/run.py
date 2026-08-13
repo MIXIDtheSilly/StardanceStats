@@ -161,6 +161,55 @@ async def crawl_batch(
     return result
 
 
+async def drain(
+    db: AsyncIOMotorDatabase,
+    fetcher: Fetcher,
+    *,
+    kind: str | None = None,
+    max_pages: int = 1_000_000,
+    max_seconds: float = float("inf"),
+    batch: int | None = None,
+    on_batch: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    """Crawl due rows until the frontier empties or a budget runs out."""
+    started = time.monotonic()
+    statuses: dict[str, int] = {}
+    done = 0
+    stopped = "drained"
+
+    while done < max_pages and time.monotonic() - started < max_seconds:
+        limit = min(batch or settings.crawl_batch_size, max_pages - done)
+        result = await crawl_batch(db, fetcher, kind=kind, limit=limit)
+        if result["crawled"] == 0:
+            break
+
+        done += result["crawled"]
+        for status, n in result["statuses"].items():
+            statuses[status] = statuses.get(status, 0) + n
+        if on_batch:
+            on_batch({"crawled": done, "statuses": statuses, "seconds": time.monotonic() - started})
+        if result.get("stopped") == "circuit_open":
+            stopped = "circuit_open"
+            break
+
+        # Crashes do not reschedule the row, so an all-crashed batch repeats forever.
+        if not set(result["statuses"]) - {"crashed"}:
+            log.error("every row in the batch crashed, stopping: %s", result["statuses"])
+            stopped = "stuck"
+            break
+    else:
+        stopped = "budget"
+
+    elapsed = time.monotonic() - started
+    return {
+        "crawled": done,
+        "seconds": round(elapsed, 1),
+        "pages_per_second": round(done / elapsed, 3) if elapsed else None,
+        "statuses": statuses,
+        "stopped": stopped,
+    }
+
+
 async def crawl_loop(
     db: AsyncIOMotorDatabase,
     fetcher: Fetcher,
