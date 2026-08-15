@@ -96,7 +96,23 @@ def test_paragraphs_do_not_run_together():
     </section>
     """
     parsed = parse_devlog_page(html, 7, 3)
-    assert parsed.data["comments"][0]["body"] == "first line second line"
+    # Kept as a break rather than a space, so the comment reads as it was written.
+    assert parsed.data["comments"][0]["body"] == "first line\n\nsecond line"
+
+
+def test_words_either_side_of_an_inline_tag_keep_their_space():
+    html = """
+    <section class="devlog-detail__comments">
+      <span id="comments_count_post_devlog_7">1</span>
+      <div id="comment_11" class="devlog-comment">
+        <a class="devlog-comment__author" href="/@zed">@zed</a>
+        <time class="devlog-comment__time" datetime="2026-07-01T10:00:00Z"></time>
+        <div class="devlog-comment__body">try the <code>sleep</code> command</div>
+      </div>
+    </section>
+    """
+    parsed = parse_devlog_page(html, 7, 3)
+    assert parsed.data["comments"][0]["body"] == "try the sleep command"
 
 
 def test_more_rendered_than_counted_is_reported():

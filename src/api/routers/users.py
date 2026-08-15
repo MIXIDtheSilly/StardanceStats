@@ -95,7 +95,6 @@ async def search_users(
             "rank": ranks[index],
             "stats": row.get("stats") or {},
             "totals": row.get("totals") or {},
-            # An exact hit should lead however the sort fell.
             "exact": (row.get("username") or "").lower() == q.strip().lstrip("@").lower(),
         }
         for index, row in enumerate(seen)
@@ -155,13 +154,16 @@ async def get_user_devlogs(
     ref: str,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    sort: Literal["posted_at", "likes", "comments", "duration_seconds"] = "posted_at",
+    sort: Literal[
+        "posted_at", "likes", "comments", "views", "duration_seconds"
+    ] = "posted_at",
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
     user = await _find_user(db, ref)
     query = {"user_id": user["_id"]}
     total = await db.devlogs.count_documents(query)
-    cursor = db.devlogs.find(query).sort([(sort, -1)]).skip(offset).limit(limit)
+    # _id breaks ties, so paging cannot show the same row twice or skip one.
+    cursor = db.devlogs.find(query).sort([(sort, -1), ("_id", -1)]).skip(offset).limit(limit)
     return stamp(
         {
             "user_id": user["_id"],
@@ -306,7 +308,6 @@ async def leaderboard(
         }
         for i, r in enumerate(rows)
     ]
-    # The oldest row on the page bounds how current the ranking is.
     as_of = min((r["last_crawled"] for r in rows if r.get("last_crawled")), default=None)
     return stamp(
         {

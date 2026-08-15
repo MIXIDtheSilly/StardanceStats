@@ -12,6 +12,7 @@ from .common import (
     id_from_path,
     parse_datetime,
     parse_duration_seconds,
+    rich_text,
     strip_handle,
     text_of,
     to_float,
@@ -26,6 +27,9 @@ POST_TYPE_FIRE = "Post::FireEvent"
 _SHIP_NUMBER_RE = re.compile(r"Ship\s*#(\d+)")
 _MISSION_SLUG_RE = re.compile(r"/missions/([^/?#\"]+)")
 _COMMENTS_ID_RE = re.compile(r"comments_count_post_devlog_(\d+)")
+
+# A ceiling, not an expectation: the longest post we have seen runs to a few hundred.
+BODY_LIMIT = 20_000
 _BLESSING_RE = re.compile(r"\b(blessed|cursed)\b", re.IGNORECASE)
 
 
@@ -282,7 +286,8 @@ def _parse_devlog_card(
         "comments": to_int(text_of(counts_node)) if counts_node else None,
         "reposts": to_int(first_text(card, ".feed-post-card__repost")),
         "views": _views(card),
-        "body_preview": _body_preview(card),
+        "body": _body(card, result),
+        "media": _media(card, result),
     }
 
     for key in ("likes", "comments", "reposts", "views", "duration_seconds", "posted_at"):
@@ -303,12 +308,50 @@ def _views(card: Node) -> int | None:
     return None
 
 
-def _body_preview(card: Node, limit: int = 280) -> str | None:
-    body = card.css_first(".feed-post-card__body")
-    text = text_of(body)
-    if not text:
-        return None
-    return text[:limit]
+def _media(card: Node, result: ParseResult) -> list[dict[str, str]]:
+    """The card's attachments, in carousel order. Most devlogs have one; some none."""
+    items: list[dict[str, str]] = []
+    for slide in card.css(".feed-post-card__media-slide"):
+        video = slide.css_first("video")
+        if video is not None:
+            source = video.css_first("source")
+            url = video.attributes.get("src") or (
+                source.attributes.get("src") if source else None
+            )
+            if url:
+                item = {"kind": "video", "url": url}
+                poster = video.attributes.get("poster")
+                if poster:
+                    item["poster"] = poster
+                items.append(item)
+            continue
+
+        image = slide.css_first("img")
+        if image is not None and image.attributes.get("src"):
+            items.append({"kind": "image", "url": image.attributes["src"]})
+            continue
+
+        # A slide we cannot read is a renamed tag, not an empty post.
+        result.warn("media slide held neither an image nor a video")
+
+    if items:
+        result.found.add("devlog.media")
+    return items
+
+
+def _body(card: Node, result: ParseResult) -> str | None:
+    """The whole post. Upstream clamps long ones with CSS, so the card holds it all."""
+    text = rich_text(card.css_first(".feed-post-card__body"))
+    if text and len(text) > BODY_LIMIT:
+        result.warn(f"devlog body of {len(text)} characters cut to {BODY_LIMIT}")
+        return text[:BODY_LIMIT]
+    return text
+
+
+def _ship_body(card: Node) -> str | None:
+    """Upstream simple_formats this into paragraphs, then sits them tight with margin: 0."""
+    text = rich_text(card.css_first(".project-show__latest-ship-text"))
+    return re.sub(r"\n{2,}", "\n", text) if text else text
 
 
 def _parse_ship_card(
@@ -348,7 +391,7 @@ def _parse_ship_card(
         "mission_slug": mission_slug(
             mission_link.attributes.get("href") if mission_link else None
         ),
-        "body": first_text(card, ".project-show__latest-ship-text"),
+        "body": _ship_body(card),
     }
 
     # Devlogs and hours render on every ship card.

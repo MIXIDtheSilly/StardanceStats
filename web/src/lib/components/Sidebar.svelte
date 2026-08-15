@@ -11,14 +11,13 @@
 	const TABS = [
 		{ label: 'Global', href: '/global', accent: 'var(--color-brand-mint)', ready: true },
 		{ label: 'People', href: '/people', accent: 'var(--color-brand-lilac)', ready: true },
-		{ label: 'Projects', href: '/projects', accent: 'var(--color-brand-blue)', ready: false },
+		{ label: 'Projects', href: '/projects', accent: 'var(--color-brand-blue)', ready: true },
 		{ label: 'Shop', href: '/shop', accent: 'var(--color-brand-yellow)', ready: false },
 		{ label: 'Ask', href: '/ask', accent: 'var(--color-brand-salmon)', ready: false }
 	];
 
 	let current = $derived(page.url.pathname);
 
-	// A person or project page still belongs to the tab it sits under.
 	function within(href: string): boolean {
 		return current === href || current.startsWith(`${href}/`);
 	}
@@ -53,7 +52,6 @@
 		{#if lastCrawl}
 			<span>last crawl {relative(lastCrawl)}</span>
 		{/if}
-		<!-- <a href="/api/docs">API docs</a> -->
 	</footer>
 </aside>
 

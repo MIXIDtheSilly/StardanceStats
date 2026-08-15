@@ -8,11 +8,9 @@ export interface MetricDef {
 	group: string;
 	accent: string;
 	kind: MetricKind;
-	/** Which half of the user document carries the current value. */
 	field: 'totals' | 'stats';
 	/** totals.* we add up from crawled rows; stats.* is the number their profile prints. */
 	source: 'computed' | 'profile';
-	/** Only snapshotted metrics can be drawn over time. */
 	chartable: boolean;
 	blurb: string;
 }
@@ -202,7 +200,204 @@ export const METRIC_GROUPS = ['Stardust', 'Time', 'Output', 'Reception', 'Commen
 
 export const DEFAULT_METRIC = 'ship_stardust';
 
-/** Tiles on a profile, in reading order. Every one of these is chartable. */
+/** A project keeps everything in one stat block, so `field` is always stats here. */
+export const PROJECT_METRICS: MetricDef[] = [
+	{
+		key: 'stardust_total',
+		label: 'Stardust',
+		group: 'Stardust',
+		accent: 'var(--color-brand-yellow)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb:
+			'Rated ship payouts, plus the fixed and per-hour awards a mission pays directly. Nothing granted off the project page is visible to us.'
+	},
+	{
+		key: 'estimated_total_stardust',
+		label: 'Est. total',
+		group: 'Stardust',
+		accent: 'var(--color-brand-cream)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: false,
+		blurb: 'Paid out so far plus what its unpaid hours would earn at the rate it usually draws.'
+	},
+	{
+		key: 'stardust_per_paid_hour',
+		label: 'Per paid hour',
+		group: 'Stardust',
+		accent: 'var(--color-brand-orange)',
+		kind: 'rate',
+		field: 'stats',
+		source: 'computed',
+		chartable: false,
+		blurb: 'Rated payouts over the hours they were actually paid for. A mission award has no rate.'
+	},
+	{
+		key: 'latest_multiplier',
+		label: 'Latest multiplier',
+		group: 'Stardust',
+		accent: 'var(--color-brand-peach)',
+		kind: 'multiplier',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'The multiplier its most recent ship drew.'
+	},
+	{
+		key: 'avg_multiplier',
+		label: 'Avg multiplier',
+		group: 'Stardust',
+		accent: 'var(--color-brand-ivory)',
+		kind: 'multiplier',
+		field: 'stats',
+		source: 'computed',
+		chartable: false,
+		blurb: 'Averaged across every ship of its that has been rated.'
+	},
+	{
+		key: 'total_hours',
+		label: 'Hours',
+		group: 'Time',
+		accent: 'var(--color-brand-peach)',
+		kind: 'hours',
+		field: 'stats',
+		source: 'profile',
+		chartable: true,
+		blurb: 'The figure the project page prints, which counts devlogs we cannot see.'
+	},
+	{
+		key: 'shipped_hours',
+		label: 'Shipped hours',
+		group: 'Time',
+		accent: 'var(--color-brand-orange)',
+		kind: 'hours',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Hours carried by a ship, whether or not its review has closed.'
+	},
+	{
+		key: 'paid_hours',
+		label: 'Paid hours',
+		group: 'Time',
+		accent: 'var(--color-brand-cream)',
+		kind: 'hours',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Hours a ship has been paid for. The rest are still waiting on a review.'
+	},
+	{
+		key: 'unpaid_hours',
+		label: 'Unpaid hours',
+		group: 'Time',
+		accent: 'var(--color-brand-ivory)',
+		kind: 'hours',
+		field: 'stats',
+		source: 'computed',
+		chartable: false,
+		blurb: 'Logged hours no ship has been paid for yet.'
+	},
+	{
+		key: 'devlogs',
+		label: 'Devlogs',
+		group: 'Output',
+		accent: 'var(--color-brand-lilac)',
+		kind: 'count',
+		field: 'stats',
+		source: 'profile',
+		chartable: true,
+		blurb: 'Devlogs the project page counts.'
+	},
+	{
+		key: 'ships',
+		label: 'Ships',
+		group: 'Output',
+		accent: 'var(--color-brand-salmon)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Ship cards on its timeline, accepted or not yet reviewed.'
+	},
+	{
+		key: 'likes',
+		label: 'Likes',
+		group: 'Reception',
+		accent: 'var(--color-brand-salmon)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Likes summed across its devlog cards.'
+	},
+	{
+		key: 'views',
+		label: 'Views',
+		group: 'Reception',
+		accent: 'var(--color-brand-mint)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Views summed across its devlog cards.'
+	},
+	{
+		key: 'comments',
+		label: 'Comments',
+		group: 'Reception',
+		accent: 'var(--color-brand-blue)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Comments summed across its devlog cards.'
+	},
+	{
+		key: 'reposts',
+		label: 'Reposts',
+		group: 'Reception',
+		accent: 'var(--color-brand-lilac)',
+		kind: 'count',
+		field: 'stats',
+		source: 'computed',
+		chartable: true,
+		blurb: 'Reposts summed across its devlog cards.'
+	},
+	{
+		key: 'followers',
+		label: 'Followers',
+		group: 'Reception',
+		accent: 'var(--color-brand-mint)',
+		kind: 'count',
+		field: 'stats',
+		source: 'profile',
+		chartable: true,
+		blurb: 'People following the project.'
+	}
+];
+
+export const PROJECT_METRIC_GROUPS = ['Stardust', 'Time', 'Output', 'Reception'];
+
+export const DEFAULT_PROJECT_METRIC = 'stardust_total';
+
+/** Tiles on a project, in reading order; every one of these must be chartable. */
+export const PROJECT_TILES = [
+	'stardust_total',
+	'total_hours',
+	'devlogs',
+	'ships',
+	'likes',
+	'views',
+	'comments',
+	'followers'
+];
+
+/** Tiles on a profile, in reading order; every one of these must be chartable. */
 export const PROFILE_TILES = [
 	'ship_stardust',
 	'hours',
@@ -215,6 +410,7 @@ export const PROFILE_TILES = [
 ];
 
 const BY_KEY = new Map(PEOPLE_METRICS.map((m) => [m.key, m]));
+const PROJECT_BY_KEY = new Map(PROJECT_METRICS.map((m) => [m.key, m]));
 
 export function metric(key: string | null | undefined): MetricDef {
 	return BY_KEY.get(key ?? '') ?? BY_KEY.get(DEFAULT_METRIC)!;
@@ -222,6 +418,14 @@ export function metric(key: string | null | undefined): MetricDef {
 
 export function isMetric(key: string | null | undefined): boolean {
 	return BY_KEY.has(key ?? '');
+}
+
+export function projectMetric(key: string | null | undefined): MetricDef {
+	return PROJECT_BY_KEY.get(key ?? '') ?? PROJECT_BY_KEY.get(DEFAULT_PROJECT_METRIC)!;
+}
+
+export function isProjectMetric(key: string | null | undefined): boolean {
+	return PROJECT_BY_KEY.has(key ?? '');
 }
 
 export function metricValue(def: MetricDef, user: UserLike): number | null {

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
+from ...db import PROJECT_RANKING_FIELDS
 from ..deps import db as db_dep
 from ..services import HistoryError, Interval, bucketed_series, stamp
 from ..services.history import METRICS, parse_metrics
@@ -14,11 +16,182 @@ router = APIRouter()
 
 PROJECT_METRICS = METRICS["project"].metrics
 
+RANKING_METRICS = PROJECT_RANKING_FIELDS
+
+CARD_FIELDS = {
+    "title": 1, "description": 1, "banner_url": 1, "demo_url": 1, "repo_url": 1,
+    "owner_id": 1, "owner_username": 1, "owner_avatar_url": 1, "members": 1,
+    "is_super_star": 1, "is_hardware": 1, "mission": 1, "stats": 1,
+    "created_at_estimate": 1, "first_seen": 1, "last_changed": 1, "last_crawled": 1,
+}
+
 
 async def _as_of(db: AsyncIOMotorDatabase, project_id: int) -> datetime | None:
     """The project's own crawl time; its devlogs and ships come off that page."""
     doc = await db.projects.find_one({"_id": project_id}, {"last_crawled": 1})
     return (doc or {}).get("last_crawled")
+
+
+def _field(metric: str) -> str:
+    field = RANKING_METRICS.get(metric)
+    if field is None:
+        raise HTTPException(
+            400, f"unknown metric {metric!r}; valid: {sorted(RANKING_METRICS)}"
+        )
+    return field
+
+
+def _card(row: dict[str, Any], field: str, rank: int | None) -> dict[str, Any]:
+    section, key = field.split(".", 1)
+    return {
+        "rank": rank,
+        "project_id": row["_id"],
+        "title": row.get("title"),
+        "description": row.get("description"),
+        "banner_url": row.get("banner_url"),
+        "demo_url": row.get("demo_url"),
+        "repo_url": row.get("repo_url"),
+        "owner_id": row.get("owner_id"),
+        "owner_username": row.get("owner_username"),
+        "owner_avatar_url": row.get("owner_avatar_url"),
+        "members": row.get("members") or [],
+        "is_super_star": bool(row.get("is_super_star")),
+        "is_hardware": bool(row.get("is_hardware")),
+        "mission": row.get("mission"),
+        "value": (row.get(section) or {}).get(key),
+        "stats": row.get("stats") or {},
+        "created_at_estimate": row.get("created_at_estimate"),
+        "first_seen": row.get("first_seen"),
+        "last_changed": row.get("last_changed"),
+    }
+
+
+def _oldest_crawl(rows: list[dict[str, Any]]) -> datetime | None:
+    """The stalest row bounds how current the page as a whole is."""
+    return min((r["last_crawled"] for r in rows if r.get("last_crawled")), default=None)
+
+
+# Declared above /projects/{project_id} so "search" is not read as an id.
+@router.get("/projects/search")
+async def search_projects(
+    q: str = Query(..., min_length=1, max_length=96, description="Part of a title."),
+    limit: int = Query(10, ge=1, le=50),
+    metric: str = Query("stardust_total", description="Which ranking the rank belongs to."),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
+    """Titles that start with, then merely contain, what was typed."""
+    field = _field(metric)
+    term = re.escape(q.strip())
+    if not term:
+        raise HTTPException(400, "nothing to search for")
+
+    seen: list[dict[str, Any]] = []
+    ids: set[int] = set()
+
+    # No lowercased title is stored, so both passes scan; the corpus is small enough.
+    for pattern in (f"^{term}", term):
+        if len(seen) >= limit:
+            break
+        query = {
+            "title": {"$regex": pattern, "$options": "i"},
+            "_id": {"$nin": list(ids)},
+        }
+        cursor = db.projects.find(query, CARD_FIELDS).sort([("title", 1)]).limit(limit - len(seen))
+        for row in await cursor.to_list(length=limit):
+            ids.add(row["_id"])
+            seen.append(row)
+
+    ranks = await _ranks(db, field, seen)
+
+    wanted = q.strip().lower()
+    items = [_card(row, field, ranks[index]) for index, row in enumerate(seen)]
+    for item, row in zip(items, seen):
+        item["exact"] = (row.get("title") or "").lower() == wanted
+    items.sort(key=lambda item: (not item["exact"], item["title"] or ""))
+
+    return stamp(
+        {"query": q, "metric": metric, "total": len(items), "items": items},
+        _oldest_crawl(seen),
+    )
+
+
+async def _ranks(
+    db: AsyncIOMotorDatabase, field: str, rows: list[dict[str, Any]]
+) -> list[int | None]:
+    """The place each row holds, counted the way /projects pages the same ranking."""
+    section, key = field.split(".", 1)
+    values = [(row.get(section) or {}).get(key) for row in rows]
+    ahead = {
+        value: await db.projects.count_documents({field: {"$gt": value}})
+        for value in {v for v in values if isinstance(v, (int, float))}
+    }
+
+    ranks: list[int | None] = []
+    for row, value in zip(rows, values):
+        if not isinstance(value, (int, float)):
+            ranks.append(None)
+            continue
+        # A tie is settled by id, so the rows tied ahead of this one hold a place too.
+        tied = await db.projects.count_documents({field: value, "_id": {"$lt": row["_id"]}})
+        ranks.append(ahead[value] + tied + 1)
+    return ranks
+
+
+@router.get("/projects")
+async def list_projects(
+    metric: str = Query("stardust_total", description="See /v1/projects/metrics."),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    super_star: bool = Query(False, description="Only projects the team has marked."),
+    hardware: bool = Query(False, description="Only projects that build something physical."),
+    mission: str | None = Query(None, description="Slug of a mission to filter by."),
+    db: AsyncIOMotorDatabase = Depends(db_dep),
+) -> dict[str, Any]:
+    """Projects ranked by one of their stats, highest first."""
+    field = _field(metric)
+
+    query: dict[str, Any] = {field: {"$ne": None}}
+    if super_star:
+        query["is_super_star"] = True
+    if hardware:
+        query["is_hardware"] = True
+    if mission:
+        query["mission.slug"] = mission
+
+    # Id breaks a tie, without which two projects on the same value could swap pages between calls.
+    cursor = (
+        db.projects.find(query, CARD_FIELDS)
+        .sort([(field, -1), ("_id", 1)])
+        .skip(offset)
+        .limit(limit)
+    )
+    rows = await cursor.to_list(length=limit)
+
+    return stamp(
+        {
+            "metric": metric,
+            "source": "computed from crawled project pages",
+            "total": await db.projects.count_documents(query),
+            "limit": limit,
+            "offset": offset,
+            "items": [
+                _card(row, field, offset + index + 1) for index, row in enumerate(rows)
+            ],
+        },
+        _oldest_crawl(rows),
+    )
+
+
+@router.get("/projects/metrics")
+async def project_metrics() -> dict[str, Any]:
+    return {
+        "metrics": sorted(RANKING_METRICS),
+        "chartable": sorted(PROJECT_METRICS),
+        "note": (
+            "stardust_total counts rated ship payouts plus what a mission pays "
+            "directly. Nothing a project earned off its own page is visible to us."
+        ),
+    }
 
 
 @router.get("/projects/{project_id}")
@@ -36,13 +209,16 @@ async def get_project_devlogs(
     project_id: int,
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    sort: Literal["posted_at", "likes", "comments", "duration_seconds"] = "posted_at",
+    sort: Literal[
+        "posted_at", "likes", "comments", "views", "duration_seconds"
+    ] = "posted_at",
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
     total = await db.devlogs.count_documents({"project_id": project_id})
     cursor = (
         db.devlogs.find({"project_id": project_id})
-        .sort([(sort, -1)])
+        # _id breaks ties, so paging cannot show the same row twice or skip one.
+        .sort([(sort, -1), ("_id", -1)])
         .skip(offset)
         .limit(limit)
     )

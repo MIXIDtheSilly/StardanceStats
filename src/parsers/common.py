@@ -67,6 +67,42 @@ def first_text(node: Node, selector: str) -> str | None:
     return text_of(node.css_first(selector))
 
 
+_BLOCK_TAGS = frozenset({
+    "address", "article", "blockquote", "div", "figure", "h1", "h2", "h3", "h4",
+    "h5", "h6", "hr", "li", "ol", "p", "pre", "section", "table", "tr", "ul",
+})
+
+
+def rich_text(node: Node | None) -> str | None:
+    """Prose as written; `text_of` would weld "the <code>sleep</code> command" into one word."""
+    if node is None:
+        return None
+
+    parts: list[str] = []
+    _gather(node, parts)
+    value = "".join(parts)
+    # Every whitespace character except a newline, so the breaks survive.
+    value = re.sub(r"[^\S\n]+", " ", value)
+    value = re.sub(r" *\n *", "\n", value)
+    value = re.sub(r"\n{3,}", "\n\n", value).strip()
+    return value or None
+
+
+def _gather(node: Node, out: list[str]) -> None:
+    """Walk the tree, breaking lines where the markup does rather than where it wraps."""
+    for child in node.iter(include_text=True):
+        if child.tag == "-text":
+            out.append(child.text(strip=False) or "")
+        elif child.tag == "br":
+            out.append("\n")
+        elif child.tag in _BLOCK_TAGS:
+            out.append("\n")
+            _gather(child, out)
+            out.append("\n")
+        else:
+            _gather(child, out)
+
+
 def to_int(value: str | None) -> int | None:
     """First integer in a string. '1,234 followers' -> 1234."""
     if value is None:

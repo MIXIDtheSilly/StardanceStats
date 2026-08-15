@@ -97,6 +97,123 @@ export interface ProjectSummary {
 	stats: Record<string, number | null>;
 }
 
+export interface Mission {
+	slug: string;
+	name?: string | null;
+	shipped?: boolean;
+	sections_done?: number | null;
+	sections_total?: number | null;
+}
+
+export interface ProjectCard {
+	/** Null when the ranking on show does not hold it. */
+	rank: number | null;
+	project_id: number;
+	title: string | null;
+	description?: string | null;
+	banner_url?: string | null;
+	demo_url?: string | null;
+	repo_url?: string | null;
+	owner_id?: number | null;
+	owner_username?: string | null;
+	owner_avatar_url?: string | null;
+	members: string[];
+	is_super_star: boolean;
+	is_hardware: boolean;
+	mission?: Mission | null;
+	value: number | null;
+	stats: Record<string, number | null>;
+	created_at_estimate?: string | null;
+	first_seen?: string | null;
+	last_changed?: string | null;
+	/** Search results only: the title matched exactly. */
+	exact?: boolean;
+}
+
+export interface ProjectBoardResponse extends Freshness {
+	metric: string;
+	source: string;
+	total: number;
+	limit: number;
+	offset: number;
+	items: ProjectCard[];
+}
+
+export interface ProjectSearchResponse extends Freshness {
+	query: string;
+	metric: string;
+	total: number;
+	items: ProjectCard[];
+}
+
+export interface ProjectDoc extends ProjectSummary, Freshness {
+	is_hardware?: boolean;
+	mission?: Mission | null;
+	owner_avatar_url?: string | null;
+	super_star_at?: string | null;
+	super_star_by?: string | null;
+	super_star_note?: string | null;
+}
+
+/** Rows crawled before the parser read attachments have none. */
+export interface DevlogMedia {
+	kind: 'image' | 'video';
+	url: string;
+	/** Videos only, and only when the card renders a still. */
+	poster?: string;
+}
+
+export interface DevlogDoc {
+	_id: number;
+	project_id: number;
+	post_id?: number;
+	username?: string | null;
+	user_id?: number | null;
+	posted_at?: string | null;
+	duration_seconds?: number | null;
+	likes?: number | null;
+	comments?: number | null;
+	views?: number | null;
+	reposts?: number | null;
+	/** The whole post. Rows crawled before we kept it have only `body_preview`. */
+	body?: string | null;
+	body_preview?: string | null;
+	media?: DevlogMedia[] | null;
+}
+
+export interface ProjectDevlogsResponse extends Freshness {
+	project_id: number;
+	total: number;
+	limit: number;
+	offset: number;
+	items: DevlogDoc[];
+}
+
+export interface ShipDoc {
+	_id: number;
+	project_id: number;
+	ship_number?: number | null;
+	username?: string | null;
+	shipped_at?: string | null;
+	devlogs_at_ship?: number | null;
+	hours_at_ship?: number | null;
+	multiplier?: number | null;
+	/** Null until the review closes. */
+	payout?: number | null;
+	payout_hours?: number | null;
+	status?: string | null;
+	mission?: string | null;
+	mission_slug?: string | null;
+	body?: string | null;
+}
+
+export interface ProjectShipsResponse extends Freshness {
+	project_id: number;
+	total: number;
+	stardust_total: number;
+	items: ShipDoc[];
+}
+
 export interface UserProjectsResponse extends Freshness {
 	user_id: number;
 	username: string;

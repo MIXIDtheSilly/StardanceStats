@@ -9,6 +9,7 @@ from .common import (
     ParseError,
     ParseResult,
     parse_datetime,
+    rich_text,
     strip_handle,
     text_of,
     to_int,
@@ -60,8 +61,7 @@ def parse_devlog_page(
     else:
         result.found.add("comments")
 
-    # Banned authors stay in the counter but not on the page, so a shortfall is
-    # ordinary; only the other direction cannot happen.
+    # Banned authors stay in the counter but not on the page, so only a surplus is impossible.
     if count is not None:
         if len(comments) > count:
             result.warn(f"thread renders {len(comments)} comments but counts {count}")
@@ -99,8 +99,7 @@ def _parse_comment(
         time_node.attributes.get("datetime") if time_node else None
     )
 
-    # An emote-only comment renders no text, so only the element going absent
-    # is a broken selector.
+    # An emote-only comment renders no text, so only an absent element is a broken selector.
     body_node = node.css_first(".devlog-comment__body")
     body = _body_text(body_node)
 
@@ -134,10 +133,7 @@ def _handle_from_href(node: Node | None) -> str | None:
 
 def _body_text(node: Node | None) -> str | None:
     """Markdown renders to several block elements; keep them apart."""
-    if node is None:
-        return None
-    value = " ".join(node.text(separator=" ", strip=True).split())
-    return value or None
+    return rich_text(node)
 
 
 def _image_alts(node: Node | None) -> list[str]:

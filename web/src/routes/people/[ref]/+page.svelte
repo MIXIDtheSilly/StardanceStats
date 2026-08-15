@@ -200,12 +200,7 @@
 
 						<div class="card2__body">
 							<div class="card2__top">
-								<a
-									class="card2__title"
-									href="https://stardance.hackclub.com/projects/{project._id}"
-									target="_blank"
-									rel="noreferrer noopener"
-								>
+								<a class="card2__title" href="/projects/{project._id}">
 									{project.title}
 								</a>
 								{#if project.is_super_star}

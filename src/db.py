@@ -35,6 +35,26 @@ LEADERBOARD_FIELDS: dict[str, str] = {
     "projects": "stats.projects",
 }
 
+# The same for the project ranking, read off the stat block the ingest builds.
+PROJECT_RANKING_FIELDS: dict[str, str] = {
+    "stardust_total": "stats.stardust_total",
+    "estimated_total_stardust": "stats.estimated_total_stardust",
+    "stardust_per_paid_hour": "stats.stardust_per_paid_hour",
+    "latest_multiplier": "stats.latest_multiplier",
+    "avg_multiplier": "stats.avg_multiplier",
+    "total_hours": "stats.total_hours",
+    "shipped_hours": "stats.shipped_hours",
+    "paid_hours": "stats.paid_hours",
+    "unpaid_hours": "stats.unpaid_hours",
+    "devlogs": "stats.devlogs",
+    "ships": "stats.ships",
+    "likes": "stats.likes",
+    "comments": "stats.comments",
+    "views": "stats.views",
+    "reposts": "stats.reposts",
+    "followers": "stats.followers",
+}
+
 # name -> (timeField, metaField)
 TIMESERIES: dict[str, tuple[str, str]] = {
     "user_snapshots": ("ts", "uid"),
@@ -121,8 +141,8 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
         await _ensure_index(db.users, [(field, DESCENDING)], sparse=True)
 
     await _ensure_index(db.projects, [("owner_id", ASCENDING)])
-    await _ensure_index(db.projects, [("stats.stardust_total", DESCENDING)])
-    await _ensure_index(db.projects, [("stats.total_hours", DESCENDING)])
+    for field in dict.fromkeys(PROJECT_RANKING_FIELDS.values()):
+        await _ensure_index(db.projects, [(field, DESCENDING)], sparse=True)
     await _ensure_index(db.projects, [("ship_status", ASCENDING)])
     await _ensure_index(db.projects, [("is_super_star", ASCENDING)])
     await _ensure_index(db.projects, [("mission.slug", ASCENDING)], sparse=True)

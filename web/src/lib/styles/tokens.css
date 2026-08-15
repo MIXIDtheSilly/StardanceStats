@@ -66,6 +66,10 @@
 	--color-brand-salmon-soft: rgba(255, 141, 157, 0.18);
 	--color-brand-yellow-soft: rgba(255, 229, 100, 0.18);
 
+	/* The accent stripe on link embeds. app.html hard-codes the same value: a meta tag cannot read a variable. */
+	--color-brand-embed: #ffffd2;
+	--color-brand-embed-soft: rgba(255, 255, 210, 0.14);
+
 	--color-brand-highlight: #f4ebb9;
 	--color-brand-highlight-secondary: #fefce7;
 	--color-brand-highlight-faint: rgba(244, 235, 185, 0.12);
@@ -76,6 +80,7 @@
 	--color-border-input-focus: hsla(0, 0%, 100%, 0.9);
 
 	--color-backdrop: hsla(245, 67%, 7%, 0.55);
+	--color-shade-edge: hsla(245, 67%, 4%, 0.42);
 	--color-shadow-deep: hsla(245, 67%, 7%, 0.45);
 
 	--radius: 8px;
