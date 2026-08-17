@@ -4,6 +4,7 @@
 	import { page as nav } from '$app/state';
 	import Avatar from '$components/Avatar.svelte';
 	import Icon from '$components/Icon.svelte';
+	import Perch from '$components/Perch.svelte';
 	import ErrorState from '$components/ErrorState.svelte';
 	import {
 		PEOPLE_METRICS,
@@ -149,6 +150,7 @@
 			<div in:fade={{ duration: 160 }}>
 				{#if podium.length}
 					<section class="podium" aria-label="Top three">
+						<Perch art="guest_star_2" at="top-right" w="4.5rem" x="18%" y="-60%" turn="-8deg" />
 						{#each podium as person (person.user_id)}
 							<a
 								class="seat"
@@ -384,6 +386,7 @@
 	}
 
 	.podium {
+		position: relative;
 		margin-top: var(--space-l);
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);

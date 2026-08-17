@@ -7,6 +7,7 @@
 	import Carousel from '$components/Carousel.svelte';
 	import ErrorState from '$components/ErrorState.svelte';
 	import Icon from '$components/Icon.svelte';
+	import Perch from '$components/Perch.svelte';
 	import StarMark from '$components/StarMark.svelte';
 	import { compact, full, relative } from '$lib/format';
 	import { firstMatch, highlight } from '$lib/highlight';
@@ -180,6 +181,14 @@
 			</form>
 
 			<div class="spans" role="group" aria-label="Posted within">
+				<!-- Anchored to the group, so it keeps its seat on "All time" as the bar rewraps. -->
+				<Perch
+					art={data.days === null ? 'guest_star_3' : 'step-review--outline'}
+					at="top-left"
+					w="3rem"
+					x="25%"
+					y="-67%"
+				/>
 				<a class="chip" class:chip--on={data.days === null} href={href({ days: null, page: null })}>
 					All time
 				</a>
@@ -528,6 +537,7 @@
 	}
 
 	.spans {
+		position: relative;
 		display: flex;
 		gap: var(--space-xxs);
 	}

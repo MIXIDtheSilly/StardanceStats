@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { page as nav } from '$app/state';
 	import Icon from '$components/Icon.svelte';
+	import Perch from '$components/Perch.svelte';
 	import StarMark from '$components/StarMark.svelte';
 	import ErrorState from '$components/ErrorState.svelte';
 	import {
@@ -181,6 +182,7 @@
 				{/if}
 
 				<section class="board">
+					<Perch art="star-creature-blue" at="top-left" w="3.5rem" x="-30%" y="-55%" turn="-12deg" />
 					<div class="board__bar">
 						<form class="find" onsubmit={openFirst} role="search">
 							<span class="find__icon"><Icon name="search" size="0.9rem" /></span>
@@ -552,6 +554,7 @@
 
 	/* Unclipped, so a hovered thumbnail can grow past its row; the row rounds its own corners. */
 	.board {
+		position: relative;
 		border: 1px solid var(--color-space-surface-faint);
 		border-radius: var(--radius);
 	}

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import Chart from '$components/Chart.svelte';
+	import Perch from '$components/Perch.svelte';
 	import RangePicker from '$components/RangePicker.svelte';
 	import ErrorState from '$components/ErrorState.svelte';
 	import { compact, full, relative, signed } from '$lib/format';
@@ -79,8 +80,8 @@
 	{#if data.totals}
 		<div class="figures-wrap">
 			<!-- Outside .figures so the grid's own clipping does not cut them in half. -->
-			<img class="perch perch--users" src="/star-creature.png" alt="" aria-hidden="true" />
-			<img class="perch perch--views" src="/star-creature-blue.png" alt="" aria-hidden="true" />
+			<Perch art="star-creature" at="top-left" w="5rem" x="-25%" y="-53%" />
+			<Perch art="star-creature-blue" at="bottom-right" w="4rem" x="-20%" y="90%" />
 			<section class="figures">
 				{#each METRICS as metric (metric.key)}
 				{@const moved = movement(metric.key)}
@@ -152,27 +153,6 @@
 	.figures-wrap {
 		position: relative;
 		margin: var(--space-l) 0;
-	}
-
-	.perch {
-		position: absolute;
-		height: auto;
-		pointer-events: none;
-	}
-
-	.perch--users {
-		left: 0;
-		top: 0;
-		width: 5rem;
-		transform: translate(-25%, -53%);
-	}
-
-	/* This art fills its canvas, so it hangs off the bottom-right corner as drawn. */
-	.perch--views {
-		right: 0;
-		bottom: 0;
-		width: 4rem;
-		transform: translate(-20%, 90%);
 	}
 
 	.figures {

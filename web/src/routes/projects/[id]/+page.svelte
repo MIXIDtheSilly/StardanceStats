@@ -7,6 +7,7 @@
 	import Chart from '$components/Chart.svelte';
 	import GithubMark from '$components/GithubMark.svelte';
 	import Icon from '$components/Icon.svelte';
+	import Perch from '$components/Perch.svelte';
 	import RangePicker from '$components/RangePicker.svelte';
 	import StarMark from '$components/StarMark.svelte';
 	import {
@@ -248,30 +249,33 @@
 		</div>
 	</header>
 
-	<section class="figures">
-		{#each TILES as tile (tile.key)}
-			{@const moved = movement(tile.key)}
-			{@const value = metricValue(tile, project)}
-			<button
-				class="figure"
-				class:figure--on={selected === tile.key}
-				style="--accent: {tile.accent}"
-				onclick={() => (selected = tile.key)}
-			>
-				<span class="figure__label">{tile.label}</span>
-				<span class="figure__value tabular" title={exactMetric(tile, value)}>
-					{formatMetric(tile, value)}
-				</span>
-				<span class="figure__delta tabular" class:down={(moved?.delta ?? 0) < 0}>
-					{!moved
-						? ''
-						: moved.delta === 0
-							? 'flat'
-							: `${signed(moved.delta)} · ${moved.days}d`}
-				</span>
-			</button>
-		{/each}
-	</section>
+	<div class="figures-wrap">
+		<Perch art="star-creature-blue" at="top-right" w="3.5rem" x="20%" y="-55%" turn="10deg" />
+		<section class="figures">
+			{#each TILES as tile (tile.key)}
+				{@const moved = movement(tile.key)}
+				{@const value = metricValue(tile, project)}
+				<button
+					class="figure"
+					class:figure--on={selected === tile.key}
+					style="--accent: {tile.accent}"
+					onclick={() => (selected = tile.key)}
+				>
+					<span class="figure__label">{tile.label}</span>
+					<span class="figure__value tabular" title={exactMetric(tile, value)}>
+						{formatMetric(tile, value)}
+					</span>
+					<span class="figure__delta tabular" class:down={(moved?.delta ?? 0) < 0}>
+						{!moved
+							? ''
+							: moved.delta === 0
+								? 'flat'
+								: `${signed(moved.delta)} · ${moved.days}d`}
+					</span>
+				</button>
+			{/each}
+		</section>
+	</div>
 
 	<section class="panel">
 		<div class="panel__head">
@@ -698,11 +702,15 @@
 		color: var(--color-space-accent);
 	}
 
+	.figures-wrap {
+		position: relative;
+		margin: var(--space-l) 0;
+	}
+
 	.figures {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
 		gap: 1px;
-		margin: var(--space-l) 0;
 		background: var(--color-space-surface-faint);
 		border: 1px solid var(--color-space-surface-faint);
 		border-radius: var(--radius);
