@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from pymongo import ASCENDING, DESCENDING
+from pymongo import ASCENDING, DESCENDING, TEXT
 from pymongo.errors import CollectionInvalid, OperationFailure
 
 from .config import settings
@@ -83,7 +83,12 @@ async def close() -> None:
         _client = None
 
 
-async def _ensure_index(coll, keys: list[tuple[str, int]], **opts) -> None:
+def _order(value):
+    """A text index names its direction ("text") where a plain one numbers it."""
+    return value if isinstance(value, str) else int(value)
+
+
+async def _ensure_index(coll, keys: list[tuple[str, int | str]], **opts) -> None:
     """create_index, tolerating an existing index that differs only in options."""
     try:
         await coll.create_index(keys, **opts)
@@ -97,7 +102,7 @@ async def _ensure_index(coll, keys: list[tuple[str, int]], **opts) -> None:
     for spec in await coll.list_indexes().to_list(length=None):
         if spec["name"] == "_id_":
             continue
-        same_key = [(f, int(o)) for f, o in spec["key"].items()] == list(keys)
+        same_key = [(f, _order(o)) for f, o in spec["key"].items()] == list(keys)
         if spec["name"] == name or same_key:
             await coll.drop_index(spec["name"])
             log.info("dropped stale index %s.%s", coll.name, spec["name"])
@@ -154,6 +159,11 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
         db.devlogs, [("username_lower", ASCENDING), ("posted_at", DESCENDING)]
     )
     await _ensure_index(db.devlogs, [("likes", DESCENDING)])
+    # The feed ranks every devlog we hold on one of these, with no project to narrow it.
+    for field in ("posted_at", "comments", "views", "reposts", "duration_seconds"):
+        await _ensure_index(db.devlogs, [(field, DESCENDING)], sparse=True)
+    # Older rows kept a preview instead of the post, so the search reads both.
+    await _ensure_index(db.devlogs, [("body", TEXT), ("body_preview", TEXT)])
     # The comment sweep's only query.
     await _ensure_index(db.devlogs, [("comments_stale", ASCENDING)], sparse=True)
 

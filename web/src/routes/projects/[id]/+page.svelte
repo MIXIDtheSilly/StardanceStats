@@ -148,10 +148,6 @@
 		return log.body ?? log.body_preview ?? null;
 	}
 
-	function truncated(log: DevlogDoc): boolean {
-		return !log.body && (log.body_preview?.length ?? 0) >= 280;
-	}
-
 	function devlogHref(log: DevlogDoc): string {
 		return `https://stardance.hackclub.com/projects/${project._id}/devlogs/${log._id}`;
 	}
@@ -508,16 +504,6 @@
 			<div class="sheet__body">
 				{#if words(opened)}
 					<p class="sheet__text">{words(opened)}</p>
-				{/if}
-
-				{#if truncated(opened)}
-					<p class="sheet__note muted">
-						This row predates full bodies, so only its preview is stored.
-						<a href={devlogHref(opened)} target="_blank" rel="noreferrer noopener">
-							Read it on Stardance
-						</a>
-						for the rest.
-					</p>
 				{/if}
 
 				{#each shots as item, index (item.url)}
@@ -1117,14 +1103,6 @@
 		line-height: 1.6;
 		color: var(--color-space-text-muted);
 		white-space: pre-line;
-	}
-
-	.sheet__note {
-		font-size: var(--font-size-xs);
-	}
-
-	.sheet__note a {
-		color: var(--color-brand-blue);
 	}
 
 	.sheet__shot {

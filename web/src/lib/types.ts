@@ -181,6 +181,29 @@ export interface DevlogDoc {
 	media?: DevlogMedia[] | null;
 }
 
+/** A devlog on the platform-wide feed, carrying the project and author it belongs to. */
+export interface DevlogCard extends DevlogDoc {
+	/** Null on the newest-first feed, which ranks nothing. */
+	rank: number | null;
+	project_title?: string | null;
+	project_banner_url?: string | null;
+	avatar_url?: string | null;
+	is_super_star?: boolean;
+	is_hardware?: boolean;
+	last_crawled?: string | null;
+}
+
+export interface DevlogFeedResponse extends Freshness {
+	q: string | null;
+	sort: string;
+	order: 'desc' | 'asc';
+	days: number | null;
+	total: number;
+	limit: number;
+	offset: number;
+	items: DevlogCard[];
+}
+
 export interface ProjectDevlogsResponse extends Freshness {
 	project_id: number;
 	total: number;
