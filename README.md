@@ -17,7 +17,7 @@ Stardance only shows you the current stats. SDS keeps the history behind them, a
 
 <img src="WIP/projects.png" alt="The projects page, ranked by stardust" width="100%">
 
-Every list is sortable by any stat we track, so you can rank projects by stardust,
+Every list is sortable by any stat I track, so you can rank projects by stardust,
 hours, likes or views instead of scrolling the one order Stardance gives you. There
 are filters for Super Stars, hardware, and search on the title.
 
@@ -25,7 +25,7 @@ are filters for Super Stars, hardware, and search on the title.
 
 <img src="WIP/people.png" alt="A profile page with stats and a views chart" width="100%">
 
-Projects and people get their own page: every stat we hold, what it did over the
+Projects and people get their own page: every stat I hold, what it did over the
 last 7 days, and a chart of any of them from 1 day to 30.
 
 ---
