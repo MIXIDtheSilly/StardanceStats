@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import Icon from '$lib/components/Icon.svelte';
 	import { relative } from '$lib/format';
 
 	interface Props {
@@ -49,6 +50,15 @@
 	</nav>
 
 	<footer class="side__foot">
+		<a
+			class="side__docs"
+			href="https://api.stardancestats.xyz/docs"
+			target="_blank"
+			rel="noopener"
+		>
+			API docs
+			<Icon name="external-link" size="0.7rem" />
+		</a>
 		{#if lastCrawl}
 			<span>last crawl {relative(lastCrawl)}</span>
 		{/if}
@@ -126,6 +136,13 @@
 
 	.side__foot > * {
 		padding: var(--space-xxs) var(--space-s);
+	}
+
+	.side__docs {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--space-xxs);
+		align-self: flex-start;
 	}
 
 	@media (max-width: 860px) {
