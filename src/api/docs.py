@@ -113,7 +113,6 @@ Plain HTTP codes with a JSON `detail` string.
 | `400` | A metric or filter that does not exist. The message lists the valid ones. |
 | `404` | The id or handle is not in our corpus, which is not the same as not existing on Stardance. |
 | `422` | A parameter failed validation. |
-| `429` | Rate limited. Applies to `/v1/ask` only. |
 | `503` | A feature is not configured on this deployment. |
 """ % {"stale": settings.api_stale_after_hours, "cache": settings.api_cache_seconds}
 
@@ -162,14 +161,6 @@ TAGS = [
         "description": (
             "The reward catalogue and how its prices move. Prices are Stardust, "
             "not currency, and differ per region."
-        ),
-    },
-    {
-        "name": "ask",
-        "description": (
-            "Natural-language questions, answered by turning them into one "
-            "read-only aggregation. Served through the site rather than the "
-            "public API, so a direct call answers `403`."
         ),
     },
 ]

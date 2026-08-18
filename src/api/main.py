@@ -79,7 +79,8 @@ app.include_router(projects.router, prefix="/v1", tags=["projects"])
 app.include_router(devlogs.router, prefix="/v1", tags=["devlogs"])
 app.include_router(users.router, prefix="/v1", tags=["users"])
 app.include_router(shop.router, prefix="/v1", tags=["shop"])
-app.include_router(ask.router, prefix="/v1", tags=["ask"])
+# Served through the site, not the public API, so it stays out of the schema.
+app.include_router(ask.router, prefix="/v1", tags=["ask"], include_in_schema=False)
 
 
 @app.get("/docs", include_in_schema=False)
