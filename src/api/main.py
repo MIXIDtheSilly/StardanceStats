@@ -17,9 +17,33 @@ logging.basicConfig(
 )
 
 
+log = logging.getLogger(__name__)
+
+
+def _log_ask_config() -> None:
+    missing = []
+    if not settings.ask_api_key:
+        missing.append("STARDANCE_ASK_API_KEY")
+    if not settings.ask_mongo_url:
+        missing.append("STARDANCE_ASK_MONGO_URL")
+    if missing:
+        log.warning(
+            "Ask disabled, /v1/ask will answer 503; unset: %s", ", ".join(missing)
+        )
+        return
+    log.info(
+        "Ask enabled: model=%s api=%s callers=%s rate=%s/h",
+        settings.ask_model,
+        settings.ask_api_url,
+        ",".join(sorted(settings.ask_caller_list)),
+        settings.ask_rate_limit,
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await database.bootstrap()
+    _log_ask_config()
     yield
     await close_ask()
     await database.close()

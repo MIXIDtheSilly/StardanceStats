@@ -131,9 +131,20 @@ async def ask(body: Question, request: Request) -> dict[str, Any]:
     """Turn a plain question into one read-only query, and run it."""
     # Checked before anything else, so a stranger learns nothing about the setup.
     if _peer(request) not in settings.ask_caller_list:
+        log.warning(
+            "Ask refused peer %r, allowed: %s",
+            _peer(request),
+            ",".join(sorted(settings.ask_caller_list)),
+        )
         raise HTTPException(403, "Ask is served through the site, not through the API")
 
     if not settings.ask_ready:
+        missing = []
+        if not settings.ask_api_key:
+            missing.append("STARDANCE_ASK_API_KEY")
+        if not settings.ask_mongo_url:
+            missing.append("STARDANCE_ASK_MONGO_URL")
+        log.warning("Ask refused, unset: %s", ", ".join(missing))
         raise HTTPException(503, "Ask is not configured on this deployment")
 
     caller = _caller(request)
