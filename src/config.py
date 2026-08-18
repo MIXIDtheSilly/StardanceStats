@@ -111,6 +111,33 @@ class Settings(BaseSettings):
     api_stale_after_hours: float = 12.0
     api_cache_seconds: int = 300
 
+    # The Ask tab. A model writes the query, so it runs as a user that can only read.
+    ask_mongo_url: str = ""
+    ask_api_url: str = "https://ai.hackclub.com/proxy/v1"
+    ask_api_key: str = ""
+    ask_model: str = "~deepseek/deepseek-v4-flash-latest"
+    # Reasoning buys a little accuracy for a lot of waiting; the repair turn is cheaper.
+    ask_reasoning: bool = False
+    ask_timeout: float = 90.0
+    ask_max_question: int = 400
+    ask_max_rows: int = 200
+    ask_query_timeout_ms: int = 8000
+    ask_retries: int = 1
+    ask_rate_limit: int = 20
+    # Every question spends our model budget, so the site may ask and the public
+    # API may not. The web server shares a host with us, hence loopback.
+    ask_callers: str = "127.0.0.1,::1"
+
+    @property
+    def ask_ready(self) -> bool:
+        """Both halves are needed: a model to write the query and a user to run it."""
+        return bool(self.ask_api_key and self.ask_mongo_url)
+
+    @property
+    def ask_caller_list(self) -> frozenset[str]:
+        """The peers allowed to ask, as against the visitors they speak for."""
+        return frozenset(_split(self.ask_callers))
+
     @property
     def proxy_list(self) -> list[str]:
         """Inline entries plus the file's, de-duplicated."""

@@ -13,7 +13,7 @@
 		{ label: 'People', href: '/people', accent: 'var(--color-brand-lilac)', ready: true },
 		{ label: 'Projects', href: '/projects', accent: 'var(--color-brand-blue)', ready: true },
 		{ label: 'Devlogs', href: '/devlogs', accent: 'var(--color-brand-yellow)', ready: true },
-		{ label: 'Ask', href: '/ask', accent: 'var(--color-brand-salmon)', ready: false }
+		{ label: 'Ask', href: '/ask', accent: 'var(--color-brand-salmon)', ready: true }
 	];
 
 	let current = $derived(page.url.pathname);

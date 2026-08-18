@@ -38,6 +38,34 @@ export async function stats<T>(
 	return (await response.json()) as T;
 }
 
+/** The caller rides along because the API rate-limits on it, and we are one address. */
+export async function statsPost<T>(
+	fetcher: typeof fetch,
+	path: string,
+	body: unknown,
+	caller?: string
+): Promise<T> {
+	const headers: Record<string, string> = {
+		accept: 'application/json',
+		'content-type': 'application/json'
+	};
+	if (caller) headers['x-forwarded-for'] = caller;
+
+	const response = await fetcher(statsUrl(path), {
+		method: 'POST',
+		headers,
+		body: JSON.stringify(body)
+	});
+
+	if (!response.ok) {
+		// FastAPI puts a refusal in `detail`, but a schema rejection puts a list there.
+		const body = await response.json().catch(() => null);
+		const detail = typeof body?.detail === 'string' ? body.detail : response.statusText;
+		throw new StatsError(response.status, detail);
+	}
+	return (await response.json()) as T;
+}
+
 /** Endpoints the page can render without: a cold database 404s rather than failing the load. */
 export async function statsOrNull<T>(
 	fetcher: typeof fetch,

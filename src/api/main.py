@@ -9,7 +9,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from .. import __version__, db as database
 from ..config import settings
 from .middleware import cache_headers
-from .routers import devlogs, health, platform, projects, shop, users
+from .routers import ask, devlogs, health, platform, projects, shop, users
+from .services.ask import close as close_ask
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s %(levelname)-7s %(name)s: %(message)s"
@@ -20,6 +21,7 @@ logging.basicConfig(
 async def lifespan(app: FastAPI):
     await database.bootstrap()
     yield
+    await close_ask()
     await database.close()
 
 
@@ -38,7 +40,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST"],
     allow_headers=["*"],
     expose_headers=["ETag"],
 )
@@ -51,6 +53,7 @@ app.include_router(projects.router, prefix="/v1", tags=["projects"])
 app.include_router(devlogs.router, prefix="/v1", tags=["projects"])
 app.include_router(users.router, prefix="/v1", tags=["users"])
 app.include_router(shop.router, prefix="/v1", tags=["shop"])
+app.include_router(ask.router, prefix="/v1", tags=["ask"])
 
 
 @app.get("/", include_in_schema=False)

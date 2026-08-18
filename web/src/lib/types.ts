@@ -263,6 +263,41 @@ export interface MetaResponse {
 	caveats: string[];
 }
 
+export type AskFormat =
+	| 'text'
+	| 'number'
+	| 'hours'
+	| 'seconds'
+	| 'date'
+	| 'username'
+	| 'project';
+
+export interface AskColumn {
+	key: string;
+	label: string;
+	format: AskFormat;
+}
+
+export type AskCell = string | number | boolean | null;
+
+export interface AskAnswer {
+	question: string;
+	title: string;
+	summary: string;
+	display: 'table' | 'number' | 'bar';
+	chart: { label: string; value: string } | null;
+	collection: string;
+	pipeline: unknown[];
+	columns: AskColumn[];
+	rows: Record<string, AskCell>[];
+	row_count: number;
+	/** The answer ran into the row cap, so there may be more. */
+	truncated: boolean;
+	attempts: number;
+	elapsed_ms: number;
+	model: string;
+}
+
 export interface HealthResponse {
 	status: 'ok' | 'degraded';
 	mongo: boolean;
