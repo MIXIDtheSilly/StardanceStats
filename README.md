@@ -13,6 +13,28 @@ A better way to browse [Stardance](https://stardance.hackclub.com).
 
 Stardance only shows you the current stats. SDS keeps the history behind them, and lets you sort by any of them. A crawler reads the public pages on a schedule, saves every reading, and serves it back as an open API and a site.
 
+## Site
+
+<img src="WIP/projects.png" alt="The projects page, ranked by stardust" width="100%">
+
+Every list is sortable by any stat we track, so you can rank projects by stardust,
+hours, likes or views instead of scrolling the one order Stardance gives you. There
+are filters for Super Stars, hardware, and search on the title.
+
+---
+
+<img src="WIP/people.png" alt="A profile page with stats and a views chart" width="100%">
+
+Projects and people get their own page: every stat we hold, what it did over the
+last 7 days, and a chart of any of them from 1 day to 30.
+
+---
+
+<img src="WIP/devlogs.png" alt="The devlogs feed" width="100%">
+
+Devlogs from every project are in one feed. Search the body of them, sort by newest, longest, shortest
+or by how much engagement they got.
+
 ## API
 
 The API is open, everything is a `GET` request.
@@ -23,7 +45,7 @@ curl "https://api.stardancestats.xyz/v1/leaderboard?metric=ship_stardust&limit=5
 ```
 
 There are five groups: `projects`, `devlogs`, `users`, `shop` and `global`. Each one
-has a list, a detail page by id, and a `/history`
+has a list, a detail page by id, and a `/history`.
 
 ```bash
 # how obliberry picked up its likes and devlogs, day by day
@@ -71,8 +93,6 @@ pytest tests/ -q
 ## Credits
 
 The star creatures are from Hack Club's [Stardance](https://github.com/hackclub/stardance)
-repo. 
-This is an unofficial fan project, not
-affiliated with Hack Club.
+repo. This is an unofficial fan project, not affiliated with Hack Club.
 
 Everything else is MIT. See [LICENSE](LICENSE).
