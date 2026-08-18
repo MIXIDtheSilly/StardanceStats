@@ -9,6 +9,17 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import PROJECT_RANKING_FIELDS
 from ..deps import db as db_dep
+from ..examples import (
+    HISTORY,
+    PROJECT,
+    PROJECT_COMMENTS,
+    PROJECT_DEVLOGS,
+    PROJECT_LIST,
+    PROJECT_METRICS as PROJECT_METRICS_EXAMPLE,
+    PROJECT_SEARCH,
+    PROJECT_SHIPS,
+    example,
+)
 from ..services import HistoryError, Interval, bucketed_series, stamp
 from ..services.history import METRICS, parse_metrics
 
@@ -72,7 +83,7 @@ def _oldest_crawl(rows: list[dict[str, Any]]) -> datetime | None:
 
 
 # Declared above /projects/{project_id} so "search" is not read as an id.
-@router.get("/projects/search")
+@router.get("/projects/search", responses=example(PROJECT_SEARCH))
 async def search_projects(
     q: str = Query(..., min_length=1, max_length=96, description="Part of a title."),
     limit: int = Query(10, ge=1, le=50),
@@ -137,7 +148,7 @@ async def _ranks(
     return ranks
 
 
-@router.get("/projects")
+@router.get("/projects", responses=example(PROJECT_LIST))
 async def list_projects(
     metric: str = Query("stardust_total", description="See /v1/projects/metrics."),
     limit: int = Query(50, ge=1, le=200),
@@ -182,8 +193,9 @@ async def list_projects(
     )
 
 
-@router.get("/projects/metrics")
+@router.get("/projects/metrics", responses=example(PROJECT_METRICS_EXAMPLE))
 async def project_metrics() -> dict[str, Any]:
+    """The metrics /projects will rank by, and the subset /history will chart."""
     return {
         "metrics": sorted(RANKING_METRICS),
         "chartable": sorted(PROJECT_METRICS),
@@ -194,17 +206,18 @@ async def project_metrics() -> dict[str, Any]:
     }
 
 
-@router.get("/projects/{project_id}")
+@router.get("/projects/{project_id}", responses=example(PROJECT))
 async def get_project(
     project_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
+    """One project as we last read it, with every field we hold for it."""
     doc = await db.projects.find_one({"_id": project_id})
     if not doc:
         raise HTTPException(404, f"project {project_id} not tracked")
     return stamp(doc, doc.get("last_crawled"))
 
 
-@router.get("/projects/{project_id}/devlogs")
+@router.get("/projects/{project_id}/devlogs", responses=example(PROJECT_DEVLOGS))
 async def get_project_devlogs(
     project_id: int,
     limit: int = Query(50, ge=1, le=200),
@@ -214,6 +227,7 @@ async def get_project_devlogs(
     ] = "posted_at",
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
+    """This project's devlogs, newest first unless another sort is asked for."""
     total = await db.devlogs.count_documents({"project_id": project_id})
     cursor = (
         db.devlogs.find({"project_id": project_id})
@@ -234,7 +248,7 @@ async def get_project_devlogs(
     )
 
 
-@router.get("/projects/{project_id}/comments")
+@router.get("/projects/{project_id}/comments", responses=example(PROJECT_COMMENTS))
 async def get_project_comments(
     project_id: int,
     limit: int = Query(50, ge=1, le=200),
@@ -293,10 +307,11 @@ async def _threads_as_of(
     return (oldest or {}).get("comments_crawled_at")
 
 
-@router.get("/projects/{project_id}/ships")
+@router.get("/projects/{project_id}/ships", responses=example(PROJECT_SHIPS))
 async def get_project_ships(
     project_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
+    """Every rated ship on this project, oldest first, and what they paid."""
     cursor = db.ships.find({"project_id": project_id}).sort([("ship_number", 1)])
     items = await cursor.to_list(length=200)
     return stamp(
@@ -310,7 +325,7 @@ async def get_project_ships(
     )
 
 
-@router.get("/projects/{project_id}/history")
+@router.get("/projects/{project_id}/history", responses=example(HISTORY))
 async def get_project_history(
     project_id: int,
     metrics: str = Query(

@@ -9,6 +9,18 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...db import LEADERBOARD_FIELDS
 from ..deps import db as db_dep
+from ..examples import (
+    HISTORY,
+    LEADERBOARD,
+    LEADERBOARD_METRICS as LEADERBOARD_METRICS_EXAMPLE,
+    USER,
+    USER_COMMENTS,
+    USER_DEVLOGS,
+    USER_PROJECTS,
+    USER_SEARCH,
+    USER_SHIPS,
+    example,
+)
 from ..services import HistoryError, Interval, bucketed_series, stamp
 from ..services.history import METRICS, parse_metrics
 
@@ -47,7 +59,7 @@ def _escape(term: str) -> str:
 
 
 # Declared above /users/{ref} so "search" is not read as a handle.
-@router.get("/users/search")
+@router.get("/users/search", responses=example(USER_SEARCH))
 async def search_users(
     q: str = Query(..., min_length=1, max_length=64, description="Part of a handle."),
     limit: int = Query(10, ge=1, le=50),
@@ -123,16 +135,18 @@ async def _ranks(
     ]
 
 
-@router.get("/users/{ref}")
+@router.get("/users/{ref}", responses=example(USER))
 async def get_user(ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
+    """One maker by id or handle. A previous handle resolves too, after a rename."""
     doc = await _find_user(db, ref)
     return stamp(doc, doc.get("last_crawled"))
 
 
-@router.get("/users/{ref}/projects")
+@router.get("/users/{ref}/projects", responses=example(USER_PROJECTS))
 async def get_user_projects(
     ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
+    """Projects this user owns or is a member of, richest first."""
     user = await _find_user(db, ref)
     cursor = db.projects.find(
         {"$or": [{"owner_id": user["_id"]}, {"member_ids": user["_id"]}]}
@@ -149,7 +163,7 @@ async def get_user_projects(
     )
 
 
-@router.get("/users/{ref}/devlogs")
+@router.get("/users/{ref}/devlogs", responses=example(USER_DEVLOGS))
 async def get_user_devlogs(
     ref: str,
     limit: int = Query(50, ge=1, le=200),
@@ -159,6 +173,7 @@ async def get_user_devlogs(
     ] = "posted_at",
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
+    """Devlogs this user has posted, across every project they work on."""
     user = await _find_user(db, ref)
     query = {"user_id": user["_id"]}
     total = await db.devlogs.count_documents(query)
@@ -177,7 +192,7 @@ async def get_user_devlogs(
     )
 
 
-@router.get("/users/{ref}/comments")
+@router.get("/users/{ref}/comments", responses=example(USER_COMMENTS))
 async def get_user_comments(
     ref: str,
     limit: int = Query(50, ge=1, le=200),
@@ -212,10 +227,11 @@ async def get_user_comments(
     )
 
 
-@router.get("/users/{ref}/ships")
+@router.get("/users/{ref}/ships", responses=example(USER_SHIPS))
 async def get_user_ships(
     ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
+    """Every rated ship this user has shipped, newest first."""
     user = await _find_user(db, ref)
     cursor = db.ships.find({"user_id": user["_id"]}).sort([("shipped_at", -1)])
     items = await cursor.to_list(length=500)
@@ -231,7 +247,7 @@ async def get_user_ships(
     )
 
 
-@router.get("/users/{ref}/history")
+@router.get("/users/{ref}/history", responses=example(HISTORY))
 async def get_user_history(
     ref: str,
     metrics: str = Query("followers,devlogs,ships", description="Comma-separated; see /v1/meta."),
@@ -263,7 +279,7 @@ async def get_user_history(
     return stamp(result, user.get("last_crawled"))
 
 
-@router.get("/leaderboard")
+@router.get("/leaderboard", responses=example(LEADERBOARD))
 async def leaderboard(
     metric: str = Query("ship_stardust", description="See /v1/leaderboard/metrics."),
     limit: int = Query(50, ge=1, le=200),
@@ -322,8 +338,9 @@ async def leaderboard(
     )
 
 
-@router.get("/leaderboard/metrics")
+@router.get("/leaderboard/metrics", responses=example(LEADERBOARD_METRICS_EXAMPLE))
 async def leaderboard_metrics() -> dict[str, Any]:
+    """The metrics /leaderboard will rank by, split by who counted them."""
     return {
         "metrics": sorted(LEADERBOARD_METRICS),
         "computed_by_us": sorted(

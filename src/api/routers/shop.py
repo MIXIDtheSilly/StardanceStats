@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...parsers.shop import REGIONS
 from ..deps import db as db_dep
+from ..examples import HISTORY, SHOP_ITEM, SHOP_LIST, SHOP_REGIONS, example
 from ..services import HistoryError, Interval, bucketed_series, stamp
 from ..services.history import parse_metrics
 
@@ -49,7 +50,7 @@ async def _as_of(db: AsyncIOMotorDatabase) -> datetime | None:
     return (doc or {}).get("last_crawled")
 
 
-@router.get("/shop")
+@router.get("/shop", responses=example(SHOP_LIST))
 async def list_shop_items(
     region: str | None = Query(None, description="US, EU, UK, IN, CA, AU or XX."),
     category: str | None = None,
@@ -100,7 +101,7 @@ async def list_shop_items(
     )
 
 
-@router.get("/shop/regions")
+@router.get("/shop/regions", responses=example(SHOP_REGIONS))
 async def shop_regions(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """Catalogue size and price range per region."""
     rows = await db.shop_items.aggregate([
@@ -140,19 +141,20 @@ async def shop_regions(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, 
     return stamp({"regions": out}, await _as_of(db))
 
 
-@router.get("/shop/{item_id}")
+@router.get("/shop/{item_id}", responses=example(SHOP_ITEM))
 async def get_shop_item(
     item_id: int,
     region: str | None = None,
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
+    """One catalogue item, priced for the region asked for."""
     doc = await db.shop_items.find_one({"_id": item_id})
     if not doc:
         raise HTTPException(404, f"shop item {item_id} not tracked")
     return stamp(_priced(doc, _region(region)), doc.get("last_crawled"))
 
 
-@router.get("/shop/{item_id}/history")
+@router.get("/shop/{item_id}/history", responses=example(HISTORY))
 async def get_shop_item_history(
     item_id: int,
     metrics: str = Query("price_us", description="Comma-separated; see /v1/meta."),

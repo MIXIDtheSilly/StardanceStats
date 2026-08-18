@@ -5,9 +5,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from .. import __version__, db as database
 from ..config import settings
+from .docs import DESCRIPTION, TAGS, scalar_page
 from .middleware import cache_headers
 from .routers import ask, devlogs, health, platform, projects, shop, users
 from .services.ask import close as close_ask
@@ -52,12 +54,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.api_title,
     version=__version__,
-    description=(
-        "Time-series statistics for the Stardance platform.\n\n"
-        "All figures are derived from Stardance's **public** pages. Rejected "
-        "ships, deleted devlogs and unverified profiles are not visible to us, "
-        "so these numbers reflect the public view rather than platform truth."
-    ),
+    summary="Public time-series statistics for the Stardance platform.",
+    description=DESCRIPTION,
+    openapi_tags=TAGS,
+    license_info={"name": "MIT", "identifier": "MIT"},
+    # Scalar replaces the stock page at /docs; Redoc stays as a CDN-free fallback.
+    docs_url=None,
     lifespan=lifespan,
 )
 
@@ -74,10 +76,16 @@ app.middleware("http")(cache_headers)
 app.include_router(health.router, prefix="/v1", tags=["meta"])
 app.include_router(platform.router, prefix="/v1", tags=["global"])
 app.include_router(projects.router, prefix="/v1", tags=["projects"])
-app.include_router(devlogs.router, prefix="/v1", tags=["projects"])
+app.include_router(devlogs.router, prefix="/v1", tags=["devlogs"])
 app.include_router(users.router, prefix="/v1", tags=["users"])
 app.include_router(shop.router, prefix="/v1", tags=["shop"])
 app.include_router(ask.router, prefix="/v1", tags=["ask"])
+
+
+@app.get("/docs", include_in_schema=False)
+async def docs() -> HTMLResponse:
+    title = f"{settings.api_title} reference"
+    return scalar_page(app.openapi_url or "/openapi.json", title)
 
 
 @app.get("/", include_in_schema=False)

@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...collector.rollup import SCOPE
 from ..deps import db as db_dep
+from ..examples import GLOBAL, HISTORY, example
 from ..services import HistoryError, Interval, bucketed_series, latest_snapshot, stamp
 from ..services.history import METRICS, parse_metrics
 
@@ -16,7 +17,7 @@ router = APIRouter()
 GLOBAL_METRICS = METRICS["global"].metrics
 
 
-@router.get("/global")
+@router.get("/global", responses=example(GLOBAL))
 async def get_global(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """The most recent platform rollup: what we hold, summed."""
     latest = await latest_snapshot(db, "global", SCOPE)
@@ -29,7 +30,7 @@ async def get_global(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, An
     return stamp({"scope": SCOPE, "totals": latest}, ts)
 
 
-@router.get("/global/history")
+@router.get("/global/history", responses=example(HISTORY))
 async def get_global_history(
     metrics: str = Query(
         "users,projects,devlogs,hours,stardust_paid",

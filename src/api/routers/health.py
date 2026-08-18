@@ -9,12 +9,13 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from ...collector.frontier import queue_depth
 from ...parsers.common import utcnow
 from ..deps import db as db_dep
+from ..examples import HEALTH, META, example
 from ..services.history import MAX_BUCKETS, METRICS
 
 router = APIRouter()
 
 
-@router.get("/health")
+@router.get("/health", responses=example(HEALTH))
 async def health(
     deep: bool = Query(
         False,
@@ -63,7 +64,7 @@ async def health(
     return out
 
 
-@router.get("/meta")
+@router.get("/meta", responses=example(META))
 async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """Corpus size and coverage."""
     # All three count frontier rows, so tracked is the denominator for both.

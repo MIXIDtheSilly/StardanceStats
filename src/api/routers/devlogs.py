@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ...parsers.common import utcnow
 from ..deps import db as db_dep
+from ..examples import DEVLOG, DEVLOG_COMMENTS, DEVLOG_LIST, HISTORY, example
 from ..services import stamp
 from ..services.history import HistoryError, Interval, bucketed_series, parse_metrics
 
@@ -54,7 +55,7 @@ async def _attach_context(
 
 
 # Declared above /devlogs/{devlog_id} so the bare path is not read as an id.
-@router.get("/devlogs")
+@router.get("/devlogs", responses=example(DEVLOG_LIST))
 async def list_devlogs(
     q: str | None = Query(
         None,
@@ -127,7 +128,7 @@ async def list_devlogs(
     )
 
 
-@router.get("/devlogs/{devlog_id}")
+@router.get("/devlogs/{devlog_id}", responses=example(DEVLOG))
 async def get_devlog(
     devlog_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
@@ -138,7 +139,7 @@ async def get_devlog(
     return stamp(doc, doc.get("last_crawled"))
 
 
-@router.get("/devlogs/{devlog_id}/comments")
+@router.get("/devlogs/{devlog_id}/comments", responses=example(DEVLOG_COMMENTS))
 async def get_devlog_comments(
     devlog_id: int,
     include_gone: bool = Query(
@@ -172,7 +173,7 @@ async def get_devlog_comments(
     )
 
 
-@router.get("/devlogs/{devlog_id}/history")
+@router.get("/devlogs/{devlog_id}/history", responses=example(HISTORY))
 async def get_devlog_history(
     devlog_id: int,
     metrics: str = Query(

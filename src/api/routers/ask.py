@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from ...config import settings
 from ...parsers.common import utcnow
+from ..examples import ASK, example
 from ..services.ask import AskError, DISPLAYS, FORMATS, jsonable, plan, run, validate
 from ..services.ask.client import ModelError
 
@@ -126,7 +127,7 @@ def _display(asked: Any, chart: Any, columns: list[dict[str, str]], rows: list) 
     return asked
 
 
-@router.post("/ask")
+@router.post("/ask", responses=example(ASK))
 async def ask(body: Question, request: Request) -> dict[str, Any]:
     """Turn a plain question into one read-only query, and run it."""
     # Checked before anything else, so a stranger learns nothing about the setup.
