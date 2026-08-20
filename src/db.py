@@ -109,6 +109,14 @@ async def _ensure_index(coll, keys: list[tuple[str, int | str]], **opts) -> None
     await coll.create_index(keys, **opts)
 
 
+async def _ensure_timeseries_index(coll, keys: list[tuple[str, int]]) -> None:
+    """create_index, tolerating a server that already covers this pair or refuses one."""
+    try:
+        await coll.create_index(keys)
+    except OperationFailure as exc:
+        log.debug("no extra index on %s (%s)", coll.name, exc)
+
+
 async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
     """Create time-series collections and indexes. Safe to call repeatedly."""
     # Explicit None check: Motor Database objects raise on bool().
@@ -139,13 +147,39 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
         except (CollectionInvalid, OperationFailure):
             pass
 
+    if "ask_log" in existing:
+        try:
+            if (await db.ask_log.options()).get("capped"):
+                log.warning(
+                    "ask_log is capped and drops old questions; recreate it uncapped to keep every one"
+                )
+        except OperationFailure:
+            pass
+
+    # Renames predating the lowercase copy, so the handle lookup need not scan for them.
+    filled = await db.users.update_many(
+        {
+            "previous_usernames": {"$exists": True},
+            "previous_usernames_lower": {"$exists": False},
+        },
+        [{"$set": {"previous_usernames_lower": {
+            "$map": {"input": "$previous_usernames", "in": {"$toLower": "$$this"}}
+        }}}],
+    )
+    if filled.modified_count:
+        log.info("filled previous_usernames_lower on %d user(s)", filled.modified_count)
+
     await _ensure_index(db.users, [("username_lower", ASCENDING)], unique=True, sparse=True)
     await _ensure_index(db.users, [("last_crawled", ASCENDING)])
+    # Only a handle we do not hold reaches this, so a bot sweep would scan without it.
+    await _ensure_index(db.users, [("previous_usernames_lower", ASCENDING)], sparse=True)
     # Every ranking sorts on one of these, and a rank is a count over one of them.
     for field in dict.fromkeys(LEADERBOARD_FIELDS.values()):
         await _ensure_index(db.users, [(field, DESCENDING)], sparse=True)
 
     await _ensure_index(db.projects, [("owner_id", ASCENDING)])
+    # An $or is only as fast as its slowest branch, and this is the other one.
+    await _ensure_index(db.projects, [("member_ids", ASCENDING)], sparse=True)
     for field in dict.fromkeys(PROJECT_RANKING_FIELDS.values()):
         await _ensure_index(db.projects, [(field, DESCENDING)], sparse=True)
     await _ensure_index(db.projects, [("ship_status", ASCENDING)])
@@ -178,6 +212,8 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
     await _ensure_index(db.comments, [("posted_at", DESCENDING)])
 
     await _ensure_index(db.ships, [("project_id", ASCENDING), ("ship_number", ASCENDING)])
+    # Every user recompute groups this user's ships; without it that reads the lot.
+    await _ensure_index(db.ships, [("user_id", ASCENDING), ("shipped_at", DESCENDING)])
     await _ensure_index(db.ships, [("username_lower", ASCENDING)])
     await _ensure_index(db.ships, [("shipped_at", DESCENDING)])
     await _ensure_index(db.ships, [("mission_slug", ASCENDING)], sparse=True)
@@ -207,5 +243,15 @@ async def bootstrap(db: AsyncIOMotorDatabase | None = None) -> None:
 
     # Capped and always full, so the error-rate count reads all 64 MB without this.
     await _ensure_index(db.crawl_log, [("ts", DESCENDING)])
+
+    # Every history call matches one entity over a window, and every page draws one.
+    for name, (time_field, meta_field) in TIMESERIES.items():
+        await _ensure_timeseries_index(
+            db[name], [(meta_field, ASCENDING), (time_field, ASCENDING)]
+        )
+
+    await _ensure_index(db.ask_log, [("ts", DESCENDING)])
+    await _ensure_index(db.ask_log, [("caller", ASCENDING), ("ts", DESCENDING)])
+    await _ensure_index(db.ask_log, [("outcome", ASCENDING), ("ts", DESCENDING)])
 
     log.info("bootstrap complete on db=%s", settings.mongo_db)

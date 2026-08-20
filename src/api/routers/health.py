@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import timedelta
 from typing import Any
 
@@ -10,12 +11,13 @@ from ...collector.frontier import queue_depth
 from ...parsers.common import utcnow
 from ..deps import db as db_dep
 from ..examples import HEALTH, META, example
+from ..services import cached_count, total_documents
 from ..services.history import MAX_BUCKETS, METRICS
 
 router = APIRouter()
 
 
-@router.get("/health", responses=example(HEALTH))
+@router.get("/health", responses=example(HEALTH), response_model=None)
 async def health(
     deep: bool = Query(
         False,
@@ -64,32 +66,55 @@ async def health(
     return out
 
 
-@router.get("/meta", responses=example(META))
+@router.get("/meta", responses=example(META), response_model=None)
 async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """Corpus size and coverage."""
+    # A whole collection is counted off its metadata; only a filter has to look.
+    whole = (
+        "projects", "devlogs", "ships", "users", "shop_snapshots",
+        "project_snapshots", "devlog_snapshots", "user_snapshots", "global_snapshots",
+    )
     # All three count frontier rows, so tracked is the denominator for both.
-    listed, tracked, crawled = {}, {}, {}
-    for kind in ("project", "user"):
-        listed[kind] = await db.crawl_frontier.count_documents(
-            {"kind": kind, "in_sitemap": True}
-        )
-        tracked[kind] = await db.crawl_frontier.count_documents({"kind": kind})
-        crawled[kind] = await db.crawl_frontier.count_documents(
-            {"kind": kind, "last_crawled": {"$ne": None}}
-        )
+    filtered = {
+        "comments": ("comments", {"gone": {"$ne": True}}),
+        "shop_items": ("shop_items", {"gone": {"$ne": True}}),
+        "users_complete": ("users", {"coverage.complete": True}),
+        "users_partial": ("users", {"coverage.complete": False}),
+        "threads_read": ("devlogs", {"comments_crawled_at": {"$ne": None}}),
+        "threads_pending": ("devlogs", {"comments_stale": True}),
+        "projects_listed": ("crawl_frontier", {"kind": "project", "in_sitemap": True}),
+        "projects_tracked": ("crawl_frontier", {"kind": "project"}),
+        "projects_crawled": (
+            "crawl_frontier", {"kind": "project", "last_crawled": {"$ne": None}}
+        ),
+        "users_listed": ("crawl_frontier", {"kind": "user", "in_sitemap": True}),
+        "users_tracked": ("crawl_frontier", {"kind": "user"}),
+        "users_crawled": (
+            "crawl_frontier", {"kind": "user", "last_crawled": {"$ne": None}}
+        ),
+    }
+    sizes, counted = await asyncio.gather(
+        asyncio.gather(*(total_documents(db, name) for name in whole)),
+        asyncio.gather(
+            *(cached_count(db, name, query) for name, query in filtered.values())
+        ),
+    )
+    size = dict(zip(whole, sizes))
+    count = dict(zip(filtered, counted))
+
     return {
         "counts": {
-            "projects": await db.projects.count_documents({}),
-            "devlogs": await db.devlogs.count_documents({}),
-            "ships": await db.ships.count_documents({}),
-            "comments": await db.comments.count_documents({"gone": {"$ne": True}}),
-            "users": await db.users.count_documents({}),
-            "shop_items": await db.shop_items.count_documents({"gone": {"$ne": True}}),
-            "shop_snapshots": await db.shop_snapshots.count_documents({}),
-            "project_snapshots": await db.project_snapshots.count_documents({}),
-            "devlog_snapshots": await db.devlog_snapshots.count_documents({}),
-            "user_snapshots": await db.user_snapshots.count_documents({}),
-            "global_snapshots": await db.global_snapshots.count_documents({}),
+            "projects": size["projects"],
+            "devlogs": size["devlogs"],
+            "ships": size["ships"],
+            "comments": count["comments"],
+            "users": size["users"],
+            "shop_items": count["shop_items"],
+            "shop_snapshots": size["shop_snapshots"],
+            "project_snapshots": size["project_snapshots"],
+            "devlog_snapshots": size["devlog_snapshots"],
+            "user_snapshots": size["user_snapshots"],
+            "global_snapshots": size["global_snapshots"],
         },
         "metrics": {kind: sorted(source.metrics) for kind, source in METRICS.items()},
         "history": {
@@ -102,19 +127,17 @@ async def meta(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
             ),
         },
         "coverage": {
-            "users_complete": await db.users.count_documents({"coverage.complete": True}),
-            "users_partial": await db.users.count_documents({"coverage.complete": False}),
+            "users_complete": count["users_complete"],
+            "users_partial": count["users_partial"],
             # listed is what the sitemap indexes; tracked adds what we found ourselves.
-            "projects_listed": listed["project"],
-            "projects_tracked": tracked["project"],
-            "projects_crawled": crawled["project"],
-            "users_listed": listed["user"],
-            "users_tracked": tracked["user"],
-            "users_crawled": crawled["user"],
-            "threads_read": await db.devlogs.count_documents(
-                {"comments_crawled_at": {"$ne": None}}
-            ),
-            "threads_pending": await db.devlogs.count_documents({"comments_stale": True}),
+            "projects_listed": count["projects_listed"],
+            "projects_tracked": count["projects_tracked"],
+            "projects_crawled": count["projects_crawled"],
+            "users_listed": count["users_listed"],
+            "users_tracked": count["users_tracked"],
+            "users_crawled": count["users_crawled"],
+            "threads_read": count["threads_read"],
+            "threads_pending": count["threads_pending"],
         },
         "data_source": "public pages of stardance.hackclub.com",
         "caveats": [

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from datetime import datetime
 from typing import Any, Literal
@@ -21,7 +22,7 @@ from ..examples import (
     USER_SHIPS,
     example,
 )
-from ..services import HistoryError, Interval, bucketed_series, stamp
+from ..services import HistoryError, Interval, bucketed_series, cached_count, stamp
 from ..services.history import METRICS, parse_metrics
 
 router = APIRouter()
@@ -46,7 +47,7 @@ async def _find_user(db: AsyncIOMotorDatabase, ref: str) -> dict[str, Any]:
     if doc:
         return doc
 
-    doc = await db.users.find_one({"previous_usernames": {"$regex": f"^{ref.lstrip('@')}$", "$options": "i"}})
+    doc = await db.users.find_one({"previous_usernames_lower": handle})
     if doc:
         return doc
 
@@ -59,7 +60,7 @@ def _escape(term: str) -> str:
 
 
 # Declared above /users/{ref} so "search" is not read as a handle.
-@router.get("/users/search", responses=example(USER_SEARCH))
+@router.get("/users/search", responses=example(USER_SEARCH), response_model=None)
 async def search_users(
     q: str = Query(..., min_length=1, max_length=64, description="Part of a handle."),
     limit: int = Query(10, ge=1, le=50),
@@ -123,26 +124,25 @@ async def _ranks(
     db: AsyncIOMotorDatabase, field: str, values: list[Any]
 ) -> list[int | None]:
     """Standing each value would take, from 1; a tie takes the better place."""
-    distinct = {v for v in values if isinstance(v, (int, float))}
-    ahead = {
-        value: await db.users.count_documents(
-            {field: {"$gt": value}, "hidden": {"$ne": True}}
-        )
+    distinct = sorted({v for v in values if isinstance(v, (int, float))})
+    counted = await asyncio.gather(*(
+        cached_count(db, "users", {field: {"$gt": value}, "hidden": {"$ne": True}})
         for value in distinct
-    }
+    ))
+    ahead = dict(zip(distinct, counted))
     return [
         ahead[value] + 1 if isinstance(value, (int, float)) else None for value in values
     ]
 
 
-@router.get("/users/{ref}", responses=example(USER))
+@router.get("/users/{ref}", responses=example(USER), response_model=None)
 async def get_user(ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """One maker by id or handle. A previous handle resolves too, after a rename."""
     doc = await _find_user(db, ref)
     return stamp(doc, doc.get("last_crawled"))
 
 
-@router.get("/users/{ref}/projects", responses=example(USER_PROJECTS))
+@router.get("/users/{ref}/projects", responses=example(USER_PROJECTS), response_model=None)
 async def get_user_projects(
     ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
@@ -163,7 +163,7 @@ async def get_user_projects(
     )
 
 
-@router.get("/users/{ref}/devlogs", responses=example(USER_DEVLOGS))
+@router.get("/users/{ref}/devlogs", responses=example(USER_DEVLOGS), response_model=None)
 async def get_user_devlogs(
     ref: str,
     limit: int = Query(50, ge=1, le=200),
@@ -176,7 +176,7 @@ async def get_user_devlogs(
     """Devlogs this user has posted, across every project they work on."""
     user = await _find_user(db, ref)
     query = {"user_id": user["_id"]}
-    total = await db.devlogs.count_documents(query)
+    total = await cached_count(db, "devlogs", query)
     # _id breaks ties, so paging cannot show the same row twice or skip one.
     cursor = db.devlogs.find(query).sort([(sort, -1), ("_id", -1)]).skip(offset).limit(limit)
     return stamp(
@@ -192,7 +192,7 @@ async def get_user_devlogs(
     )
 
 
-@router.get("/users/{ref}/comments", responses=example(USER_COMMENTS))
+@router.get("/users/{ref}/comments", responses=example(USER_COMMENTS), response_model=None)
 async def get_user_comments(
     ref: str,
     limit: int = Query(50, ge=1, le=200),
@@ -207,7 +207,7 @@ async def get_user_comments(
     if not include_self:
         query["is_self"] = False
 
-    total = await db.comments.count_documents(query)
+    total = await cached_count(db, "comments", query)
     cursor = db.comments.find(query).sort([(sort, -1)]).skip(offset).limit(limit)
     items = await cursor.to_list(length=limit)
     totals = user.get("totals") or {}
@@ -227,7 +227,7 @@ async def get_user_comments(
     )
 
 
-@router.get("/users/{ref}/ships", responses=example(USER_SHIPS))
+@router.get("/users/{ref}/ships", responses=example(USER_SHIPS), response_model=None)
 async def get_user_ships(
     ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
@@ -247,7 +247,7 @@ async def get_user_ships(
     )
 
 
-@router.get("/users/{ref}/history", responses=example(HISTORY))
+@router.get("/users/{ref}/history", responses=example(HISTORY), response_model=None)
 async def get_user_history(
     ref: str,
     metrics: str = Query("followers,devlogs,ships", description="Comma-separated; see /v1/meta."),
@@ -279,7 +279,7 @@ async def get_user_history(
     return stamp(result, user.get("last_crawled"))
 
 
-@router.get("/leaderboard", responses=example(LEADERBOARD))
+@router.get("/leaderboard", responses=example(LEADERBOARD), response_model=None)
 async def leaderboard(
     metric: str = Query("ship_stardust", description="See /v1/leaderboard/metrics."),
     limit: int = Query(50, ge=1, le=200),
@@ -329,7 +329,7 @@ async def leaderboard(
         {
             "metric": metric,
             "source": "computed from crawled rows",
-            "total": await db.users.count_documents(query),
+            "total": await cached_count(db, "users", query),
             "limit": limit,
             "offset": offset,
             "items": items,
@@ -338,7 +338,11 @@ async def leaderboard(
     )
 
 
-@router.get("/leaderboard/metrics", responses=example(LEADERBOARD_METRICS_EXAMPLE))
+@router.get(
+    "/leaderboard/metrics",
+    responses=example(LEADERBOARD_METRICS_EXAMPLE),
+    response_model=None,
+)
 async def leaderboard_metrics() -> dict[str, Any]:
     """The metrics /leaderboard will rank by, split by who counted them."""
     return {

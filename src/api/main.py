@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, ORJSONResponse
 
 from .. import __version__, db as database
 from ..config import settings
@@ -20,6 +20,16 @@ logging.basicConfig(
 
 
 log = logging.getLogger(__name__)
+
+
+def _json_response() -> type[JSONResponse]:
+    """ORJSONResponse only checks for orjson when it renders, which 500s every read."""
+    try:
+        import orjson  # noqa: F401
+    except ImportError:
+        log.warning("orjson is not installed; encoding responses the slower way")
+        return JSONResponse
+    return ORJSONResponse
 
 
 def _log_ask_config() -> None:
@@ -60,8 +70,13 @@ app = FastAPI(
     license_info={"name": "MIT", "identifier": "MIT"},
     # Scalar replaces the stock page at /docs; Redoc stays as a CDN-free fallback.
     docs_url=None,
+    # A ranking page or a history window is a lot of numbers to encode in Python.
+    default_response_class=_json_response(),
     lifespan=lifespan,
 )
+
+# First, so CORS ends up outside it: a cache hit never reaches the app.
+app.middleware("http")(cache_headers)
 
 app.add_middleware(
     CORSMiddleware,
@@ -70,8 +85,6 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["ETag"],
 )
-
-app.middleware("http")(cache_headers)
 
 app.include_router(health.router, prefix="/v1", tags=["meta"])
 app.include_router(platform.router, prefix="/v1", tags=["global"])

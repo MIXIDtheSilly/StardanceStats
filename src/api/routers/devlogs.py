@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from ...parsers.common import utcnow
 from ..deps import db as db_dep
 from ..examples import DEVLOG, DEVLOG_COMMENTS, DEVLOG_LIST, HISTORY, example
-from ..services import stamp
+from ..services import cached_count, stamp
 from ..services.history import HistoryError, Interval, bucketed_series, parse_metrics
 
 router = APIRouter()
@@ -55,7 +55,7 @@ async def _attach_context(
 
 
 # Declared above /devlogs/{devlog_id} so the bare path is not read as an id.
-@router.get("/devlogs", responses=example(DEVLOG_LIST))
+@router.get("/devlogs", responses=example(DEVLOG_LIST), response_model=None)
 async def list_devlogs(
     q: str | None = Query(
         None,
@@ -95,7 +95,8 @@ async def list_devlogs(
         # Merged, not assigned: sorting by time already bounds this same field.
         query.setdefault(sort, {})["$ne"] = None
 
-    total = await db.devlogs.count_documents(query)
+    # A text search would otherwise run twice: once to count, once to page.
+    total = await cached_count(db, "devlogs", query)
     if sort == "relevance":
         # A $meta projection adds the score without dropping the rest of the row.
         cursor = db.devlogs.find(query, {"score": {"$meta": "textScore"}}).sort(
@@ -128,7 +129,7 @@ async def list_devlogs(
     )
 
 
-@router.get("/devlogs/{devlog_id}", responses=example(DEVLOG))
+@router.get("/devlogs/{devlog_id}", responses=example(DEVLOG), response_model=None)
 async def get_devlog(
     devlog_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
@@ -139,7 +140,11 @@ async def get_devlog(
     return stamp(doc, doc.get("last_crawled"))
 
 
-@router.get("/devlogs/{devlog_id}/comments", responses=example(DEVLOG_COMMENTS))
+@router.get(
+    "/devlogs/{devlog_id}/comments",
+    responses=example(DEVLOG_COMMENTS),
+    response_model=None,
+)
 async def get_devlog_comments(
     devlog_id: int,
     include_gone: bool = Query(
@@ -173,7 +178,7 @@ async def get_devlog_comments(
     )
 
 
-@router.get("/devlogs/{devlog_id}/history", responses=example(HISTORY))
+@router.get("/devlogs/{devlog_id}/history", responses=example(HISTORY), response_model=None)
 async def get_devlog_history(
     devlog_id: int,
     metrics: str = Query(

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-# crawl_frontier, crawl_log and crawl_state are deliberately not readable.
+# Refused whatever the allowlist below says, and whatever anyone adds to it later.
+FORBIDDEN: frozenset[str] = frozenset(
+    {"ask_log", "crawl_log", "crawl_frontier", "crawl_state"}
+)
+
 COLLECTIONS: frozenset[str] = frozenset(
     {
         "users",
@@ -15,7 +19,7 @@ COLLECTIONS: frozenset[str] = frozenset(
         "project_snapshots",
         "devlog_snapshots",
     }
-)
+) - FORBIDDEN
 
 # A $match on one of these is read as a date even when written as a string.
 DATE_FIELDS: frozenset[str] = frozenset(

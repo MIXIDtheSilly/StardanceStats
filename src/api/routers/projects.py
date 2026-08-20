@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import re
 from datetime import datetime
 from typing import Any, Literal
@@ -20,7 +21,7 @@ from ..examples import (
     PROJECT_SHIPS,
     example,
 )
-from ..services import HistoryError, Interval, bucketed_series, stamp
+from ..services import HistoryError, Interval, bucketed_series, cached_count, stamp
 from ..services.history import METRICS, parse_metrics
 
 router = APIRouter()
@@ -83,7 +84,7 @@ def _oldest_crawl(rows: list[dict[str, Any]]) -> datetime | None:
 
 
 # Declared above /projects/{project_id} so "search" is not read as an id.
-@router.get("/projects/search", responses=example(PROJECT_SEARCH))
+@router.get("/projects/search", responses=example(PROJECT_SEARCH), response_model=None)
 async def search_projects(
     q: str = Query(..., min_length=1, max_length=96, description="Part of a title."),
     limit: int = Query(10, ge=1, le=50),
@@ -132,23 +133,33 @@ async def _ranks(
     """The place each row holds, counted the way /projects pages the same ranking."""
     section, key = field.split(".", 1)
     values = [(row.get(section) or {}).get(key) for row in rows]
-    ahead = {
-        value: await db.projects.count_documents({field: {"$gt": value}})
-        for value in {v for v in values if isinstance(v, (int, float))}
-    }
+    ranked = [
+        (row, value)
+        for row, value in zip(rows, values)
+        if isinstance(value, (int, float))
+    ]
+    distinct = sorted({value for _, value in ranked})
 
-    ranks: list[int | None] = []
-    for row, value in zip(rows, values):
-        if not isinstance(value, (int, float)):
-            ranks.append(None)
-            continue
-        # A tie is settled by id, so the rows tied ahead of this one hold a place too.
-        tied = await db.projects.count_documents({field: value, "_id": {"$lt": row["_id"]}})
-        ranks.append(ahead[value] + tied + 1)
-    return ranks
+    # A tie is settled by id, so the rows tied ahead of this one hold a place too.
+    counted = await asyncio.gather(
+        *(cached_count(db, "projects", {field: {"$gt": value}}) for value in distinct),
+        *(
+            cached_count(db, "projects", {field: value, "_id": {"$lt": row["_id"]}})
+            for row, value in ranked
+        ),
+    )
+    ahead = dict(zip(distinct, counted))
+    tied = dict(zip((row["_id"] for row, _ in ranked), counted[len(distinct):]))
+
+    return [
+        ahead[value] + tied[row["_id"]] + 1
+        if isinstance(value, (int, float))
+        else None
+        for row, value in zip(rows, values)
+    ]
 
 
-@router.get("/projects", responses=example(PROJECT_LIST))
+@router.get("/projects", responses=example(PROJECT_LIST), response_model=None)
 async def list_projects(
     metric: str = Query("stardust_total", description="See /v1/projects/metrics."),
     limit: int = Query(50, ge=1, le=200),
@@ -182,7 +193,7 @@ async def list_projects(
         {
             "metric": metric,
             "source": "computed from crawled project pages",
-            "total": await db.projects.count_documents(query),
+            "total": await cached_count(db, "projects", query),
             "limit": limit,
             "offset": offset,
             "items": [
@@ -193,7 +204,11 @@ async def list_projects(
     )
 
 
-@router.get("/projects/metrics", responses=example(PROJECT_METRICS_EXAMPLE))
+@router.get(
+    "/projects/metrics",
+    responses=example(PROJECT_METRICS_EXAMPLE),
+    response_model=None,
+)
 async def project_metrics() -> dict[str, Any]:
     """The metrics /projects will rank by, and the subset /history will chart."""
     return {
@@ -206,7 +221,7 @@ async def project_metrics() -> dict[str, Any]:
     }
 
 
-@router.get("/projects/{project_id}", responses=example(PROJECT))
+@router.get("/projects/{project_id}", responses=example(PROJECT), response_model=None)
 async def get_project(
     project_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
@@ -217,7 +232,11 @@ async def get_project(
     return stamp(doc, doc.get("last_crawled"))
 
 
-@router.get("/projects/{project_id}/devlogs", responses=example(PROJECT_DEVLOGS))
+@router.get(
+    "/projects/{project_id}/devlogs",
+    responses=example(PROJECT_DEVLOGS),
+    response_model=None,
+)
 async def get_project_devlogs(
     project_id: int,
     limit: int = Query(50, ge=1, le=200),
@@ -228,7 +247,7 @@ async def get_project_devlogs(
     db: AsyncIOMotorDatabase = Depends(db_dep),
 ) -> dict[str, Any]:
     """This project's devlogs, newest first unless another sort is asked for."""
-    total = await db.devlogs.count_documents({"project_id": project_id})
+    total = await cached_count(db, "devlogs", {"project_id": project_id})
     cursor = (
         db.devlogs.find({"project_id": project_id})
         # _id breaks ties, so paging cannot show the same row twice or skip one.
@@ -248,7 +267,11 @@ async def get_project_devlogs(
     )
 
 
-@router.get("/projects/{project_id}/comments", responses=example(PROJECT_COMMENTS))
+@router.get(
+    "/projects/{project_id}/comments",
+    responses=example(PROJECT_COMMENTS),
+    response_model=None,
+)
 async def get_project_comments(
     project_id: int,
     limit: int = Query(50, ge=1, le=200),
@@ -257,7 +280,7 @@ async def get_project_comments(
 ) -> dict[str, Any]:
     """Every comment we have read across this project's devlogs, newest first."""
     query = {"project_id": project_id, "gone": {"$ne": True}}
-    total = await db.comments.count_documents(query)
+    total = await cached_count(db, "comments", query)
     cursor = (
         db.comments.find(query).sort([("posted_at", -1)]).skip(offset).limit(limit)
     )
@@ -307,7 +330,11 @@ async def _threads_as_of(
     return (oldest or {}).get("comments_crawled_at")
 
 
-@router.get("/projects/{project_id}/ships", responses=example(PROJECT_SHIPS))
+@router.get(
+    "/projects/{project_id}/ships",
+    responses=example(PROJECT_SHIPS),
+    response_model=None,
+)
 async def get_project_ships(
     project_id: int, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
@@ -325,7 +352,11 @@ async def get_project_ships(
     )
 
 
-@router.get("/projects/{project_id}/history", responses=example(HISTORY))
+@router.get(
+    "/projects/{project_id}/history",
+    responses=example(HISTORY),
+    response_model=None,
+)
 async def get_project_history(
     project_id: int,
     metrics: str = Query(

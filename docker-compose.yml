@@ -31,7 +31,7 @@ x-app: &app
 services:
   api:
     <<: *app
-    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8471
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8471 --no-proxy-headers
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as r; r.urlopen('http://127.0.0.1:8471/v1/health', timeout=5)"]
       interval: 30s

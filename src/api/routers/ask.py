@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections import defaultdict, deque
@@ -11,7 +12,18 @@ from pydantic import BaseModel, Field
 from ...config import settings
 from ...parsers.common import utcnow
 from ..examples import ASK, example
-from ..services.ask import AskError, DISPLAYS, FORMATS, jsonable, plan, run, validate
+from ..services.ask import (
+    AskError,
+    DISPLAYS,
+    FORMATS,
+    QueryBusy,
+    QueryTooSlow,
+    jsonable,
+    plan,
+    record,
+    run,
+    validate,
+)
 from ..services.ask.client import ModelError
 
 log = logging.getLogger(__name__)
@@ -23,6 +35,8 @@ WINDOW = 3600.0
 MAX_CALLERS = 4096
 MAX_COLUMNS = 8
 MAX_BARS = 40
+MAX_ERROR = 400
+MAX_PIPELINE = 4000
 # Only reached when the model returned whole documents instead of naming columns.
 NOISE = frozenset(
     {"first_seen", "last_changed", "last_crawled", "snapshot_at", "comments_stale",
@@ -43,10 +57,18 @@ def _peer(request: Request) -> str:
 
 def _caller(request: Request) -> str:
     """The visitor the web server names, believable only because _peer vouched for it."""
+    for header in ("cf-connecting-ip", "x-real-ip"):
+        named = request.headers.get(header, "").strip()
+        if named:
+            return named
+
     forwarded = request.headers.get("x-forwarded-for", "")
     if forwarded:
         return forwarded.split(",")[0].strip()
-    return _peer(request) or "unknown"
+
+    peer = _peer(request)
+    log.warning("ask saw no forwarded address from %s, so the site shares one bucket", peer)
+    return peer or "unknown"
 
 
 def _forget(now: float) -> None:
@@ -127,16 +149,49 @@ def _display(asked: Any, chart: Any, columns: list[dict[str, str]], rows: list) 
     return asked
 
 
-@router.post("/ask", responses=example(ASK))
+@router.post("/ask", responses=example(ASK), response_model=None)
 async def ask(body: Question, request: Request) -> dict[str, Any]:
     """Turn a plain question into one read-only query, and run it."""
+    entry: dict[str, Any] = {
+        "ts": utcnow(),
+        "peer": _peer(request),
+        "caller": _caller(request),
+        "forwarded": request.headers.get("x-forwarded-for", ""),
+        "agent": request.headers.get("user-agent", "")[:300],
+        "referer": request.headers.get("referer", "")[:300],
+        "body": body.model_dump(),
+    }
+    try:
+        answer = await _answer(body, entry)
+    except HTTPException as exc:
+        entry["status"] = exc.status_code
+        entry.setdefault("outcome", "refused")
+        entry["error"] = str(exc.detail)[:MAX_ERROR]
+        raise
+    except Exception as exc:
+        entry["status"] = 500
+        entry["outcome"] = "crashed"
+        entry["error"] = f"{type(exc).__name__}: {exc}"[:MAX_ERROR]
+        raise
+    else:
+        entry["status"] = 200
+        entry["outcome"] = "answered"
+        return answer
+    finally:
+        await record(entry)
+
+
+async def _answer(body: Question, entry: dict[str, Any]) -> dict[str, Any]:
+    peer, caller = entry["peer"], entry["caller"]
+
     # Checked before anything else, so a stranger learns nothing about the setup.
-    if _peer(request) not in settings.ask_caller_list:
+    if peer not in settings.ask_caller_list:
         log.warning(
-            "Ask refused peer %r, allowed: %s",
-            _peer(request),
+            "ask refused peer %r, allowed: %s",
+            peer,
             ",".join(sorted(settings.ask_caller_list)),
         )
+        entry["outcome"] = "off_site"
         raise HTTPException(403, "Ask is served through the site, not through the API")
 
     if not settings.ask_ready:
@@ -145,17 +200,26 @@ async def ask(body: Question, request: Request) -> dict[str, Any]:
             missing.append("STARDANCE_ASK_API_KEY")
         if not settings.ask_mongo_url:
             missing.append("STARDANCE_ASK_MONGO_URL")
-        log.warning("Ask refused, unset: %s", ", ".join(missing))
+        log.warning("ask refused caller=%s, unset: %s", caller, ", ".join(missing))
+        entry["outcome"] = "unconfigured"
         raise HTTPException(503, "Ask is not configured on this deployment")
 
-    caller = _caller(request)
     if not _allow(caller):
+        log.info(
+            "ask rate limited caller=%s at %s/h over %s callers",
+            caller,
+            settings.ask_rate_limit,
+            len(_asked),
+        )
+        entry["outcome"] = "rate_limited"
         raise HTTPException(
             429, f"{settings.ask_rate_limit} questions an hour is the limit; try later"
         )
 
     question = body.question.strip()[: settings.ask_max_question]
+    entry["question"] = question
     if len(question) < 3:
+        entry["outcome"] = "too_short"
         raise HTTPException(422, "ask a question first")
 
     started = time.monotonic()
@@ -169,6 +233,13 @@ async def ask(body: Question, request: Request) -> dict[str, Any]:
                 question, today=today, max_rows=settings.ask_max_rows, repairs=repairs
             )
             if isinstance(wanted.get("error"), str):
+                log.info(
+                    "ask declined caller=%s question=%r: %s",
+                    caller,
+                    question,
+                    wanted["error"][:300],
+                )
+                entry["outcome"] = "declined"
                 raise HTTPException(422, wanted["error"][:300])
 
             pipeline = validate(
@@ -181,16 +252,53 @@ async def ask(body: Question, request: Request) -> dict[str, Any]:
             )
             break
         except ModelError as exc:
-            log.warning("ask model failed: %s", exc)
+            log.warning("ask model failed caller=%s question=%r: %s", caller, question, exc)
+            entry["outcome"] = "model_failed"
+            entry["elapsed_ms"] = round((time.monotonic() - started) * 1000)
             raise HTTPException(502, str(exc)[:200]) from exc
+        except QueryBusy as exc:
+            entry["outcome"] = "busy"
+            entry["elapsed_ms"] = round((time.monotonic() - started) * 1000)
+            raise HTTPException(503, str(exc)) from exc
+        # Ahead of AskError, which it subclasses: a repair would read it all again.
+        except QueryTooSlow as exc:
+            log.info("ask too costly caller=%s question=%r", caller, question)
+            entry["outcome"] = "too_costly"
+            entry["attempts"] = len(repairs) + 1
+            entry["elapsed_ms"] = round((time.monotonic() - started) * 1000)
+            raise HTTPException(422, str(exc)) from exc
         except AskError as exc:
             if len(repairs) >= settings.ask_retries:
-                log.info("ask gave up on %r: %s", question[:80], exc)
+                log.info("ask gave up caller=%s on %r: %s", caller, question, exc)
+                entry["outcome"] = "gave_up"
+                entry["attempts"] = len(repairs) + 1
+                entry["elapsed_ms"] = round((time.monotonic() - started) * 1000)
                 raise HTTPException(422, str(exc)[:400]) from exc
             repairs.append((exc.wrote or raw, str(exc)))
 
     columns = _columns(wanted.get("columns"), rows)
     display = _display(wanted.get("display"), wanted.get("chart"), columns, rows)
+    elapsed = round((time.monotonic() - started) * 1000)
+    entry.update(
+        {
+            "collection": wanted["collection"],
+            "pipeline": json.dumps(jsonable(pipeline))[:MAX_PIPELINE],
+            "display": display,
+            "row_count": len(rows),
+            "attempts": len(repairs) + 1,
+            "elapsed_ms": elapsed,
+            "model": settings.ask_model,
+        }
+    )
+    log.info(
+        "ask answered caller=%s question=%r collection=%s rows=%s attempts=%s in %sms",
+        caller,
+        question,
+        wanted["collection"],
+        len(rows),
+        len(repairs) + 1,
+        elapsed,
+    )
 
     return {
         "question": question,
@@ -205,6 +313,6 @@ async def ask(body: Question, request: Request) -> dict[str, Any]:
         "row_count": len(rows),
         "truncated": len(rows) >= settings.ask_max_rows,
         "attempts": len(repairs) + 1,
-        "elapsed_ms": round((time.monotonic() - started) * 1000),
+        "elapsed_ms": elapsed,
         "model": settings.ask_model,
     }

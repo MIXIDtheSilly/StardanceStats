@@ -124,6 +124,10 @@ async def ingest_user(
         doc["previous_usernames"] = sorted(
             set((existing.get("previous_usernames") or []) + [renamed_from])
         )
+        # The lookup matches on this one, so a rename search can use an index.
+        doc["previous_usernames_lower"] = [
+            name.lower() for name in doc["previous_usernames"]
+        ]
 
     changed = _changed_keys(previous_stats, stats, PROFILE_STATS)
     if changed or first_ingest:

@@ -5,6 +5,8 @@ from datetime import datetime, timezone
 import pytest
 
 from src.api.services.ask.guard import AskError, validate
+from src.api.services.ask.schema import COLLECTIONS, FORBIDDEN
+from src.api.services.ask.schema import COLLECTIONS, FORBIDDEN
 
 ROWS = 50
 
@@ -38,6 +40,43 @@ def test_a_collection_we_do_not_hold_is_refused():
 
 def test_the_crawler_tables_are_not_readable():
     assert "not one we hold" in refused([{"$match": {}}], collection="crawl_frontier")
+
+
+def test_the_question_log_is_not_readable():
+    assert "not one we hold" in refused([{"$match": {}}], collection="ask_log")
+
+
+def test_the_question_log_cannot_be_reached_through_a_lookup():
+    pipeline = [
+        {
+            "$lookup": {
+                "from": "ask_log",
+                "localField": "_id",
+                "foreignField": "caller",
+                "as": "asked",
+            }
+        }
+    ]
+    assert "cannot read" in refused(pipeline)
+
+
+def test_nothing_forbidden_can_sit_in_the_allowlist():
+    assert not (COLLECTIONS & FORBIDDEN)
+
+
+def test_the_question_log_is_not_readable():
+    assert "not one we hold" in refused([{"$match": {}}], collection="ask_log")
+
+
+def test_the_question_log_cannot_be_reached_through_a_lookup():
+    pipeline = [
+        {"$lookup": {"from": "ask_log", "localField": "_id", "foreignField": "caller", "as": "asked"}}
+    ]
+    assert "cannot read" in refused(pipeline)
+
+
+def test_nothing_forbidden_is_in_the_allowlist():
+    assert not (COLLECTIONS & FORBIDDEN)
 
 
 def test_an_empty_pipeline_is_refused():

@@ -4,7 +4,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from .schema import COLLECTIONS, DATE_FIELDS
+from .schema import COLLECTIONS, DATE_FIELDS, FORBIDDEN
 
 MAX_STAGES = 24
 MAX_DEPTH = 18
@@ -101,7 +101,7 @@ class AskError(Exception):
 
 def validate(collection: Any, pipeline: Any, *, max_rows: int) -> list[dict[str, Any]]:
     """Refuse anything but a read, and return the pipeline capped at max_rows."""
-    if collection not in COLLECTIONS:
+    if collection in FORBIDDEN or collection not in COLLECTIONS:
         known = ", ".join(sorted(COLLECTIONS))
         raise AskError(f"collection {collection!r} is not one we hold; pick from: {known}")
     if not isinstance(pipeline, list) or not pipeline:
@@ -160,7 +160,7 @@ def _bounded(name: str, body: Any, max_rows: int) -> int | dict[str, int]:
 def _lookup(body: Any, *, depth: int, max_rows: int) -> dict[str, Any]:
     if not isinstance(body, dict):
         raise AskError("$lookup takes an object")
-    if body.get("from") not in COLLECTIONS:
+    if body.get("from") in FORBIDDEN or body.get("from") not in COLLECTIONS:
         raise AskError(f"$lookup cannot read {body.get('from')!r}")
 
     checked: dict[str, Any] = {}

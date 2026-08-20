@@ -5,10 +5,12 @@ ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 COPY pyproject.toml ./
+# Listed here rather than installed from pyproject, so this must track it by hand.
 RUN pip install --no-cache-dir \
       "fastapi>=0.115" "uvicorn[standard]>=0.30" "motor>=3.5" "pymongo>=4.6" \
       "pydantic>=2.7" "pydantic-settings>=2.3" "httpx[http2]>=0.27" \
-      "selectolax>=0.3.21" "apscheduler>=3.10" "python-dateutil>=2.9"
+      "selectolax>=0.3.21" "apscheduler>=3.10" "python-dateutil>=2.9" \
+      "orjson>=3.10"
 
 COPY src ./src
 COPY scripts ./scripts

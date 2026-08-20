@@ -28,11 +28,54 @@ def clean_counters():
     router._asked.clear()
 
 
+@pytest.fixture(autouse=True)
+def logged(monkeypatch):
+    rows: list[dict] = []
+
+    async def keep(entry):
+        rows.append(entry)
+
+    monkeypatch.setattr(router, "record", keep)
+    return rows
+
+
 async def test_ask_is_off_until_both_halves_are_configured(client, monkeypatch):
     monkeypatch.setattr(settings, "ask_api_key", "")
     async with client as http:
         response = await http.post("/v1/ask", json={"question": "how many users?"})
     assert response.status_code == 503
+
+
+async def test_a_refused_question_is_still_written_down(stranger, logged):
+    async with stranger as http:
+        await http.post("/v1/ask", json={"question": "how many users?"})
+    assert len(logged) == 1
+    assert logged[0]["body"] == {"question": "how many users?"}
+    assert logged[0]["outcome"] == "off_site"
+    assert logged[0]["status"] == 403
+    assert logged[0]["peer"] == "203.0.113.7"
+
+
+async def test_the_row_names_the_visitor_the_site_forwarded(client, logged, monkeypatch):
+    monkeypatch.setattr(settings, "ask_api_key", "")
+    async with client as http:
+        await http.post(
+            "/v1/ask",
+            json={"question": "how many users?"},
+            headers={"x-forwarded-for": "9.9.9.9"},
+        )
+    assert logged[0]["caller"] == "9.9.9.9"
+    assert logged[0]["outcome"] == "unconfigured"
+
+
+async def test_a_caller_out_of_questions_is_written_down(client, logged, monkeypatch):
+    monkeypatch.setattr(settings, "ask_rate_limit", 0)
+    monkeypatch.setattr(settings, "ask_api_key", "key")
+    monkeypatch.setattr(settings, "ask_mongo_url", "mongodb://localhost/x")
+    async with client as http:
+        response = await http.post("/v1/ask", json={"question": "how many users?"})
+    assert response.status_code == 429
+    assert logged[0]["outcome"] == "rate_limited"
 
 
 def test_a_caller_runs_out_of_questions(monkeypatch):
@@ -64,6 +107,18 @@ async def test_a_forged_forwarded_header_does_not_open_the_gate(stranger):
 
 def test_the_first_hop_is_the_caller():
     request = type("R", (), {"headers": {"x-forwarded-for": "9.9.9.9, 10.0.0.1"}, "client": None})
+    assert router._caller(request) == "9.9.9.9"
+
+
+def test_a_single_address_from_the_proxy_beats_the_forwarded_chain():
+    headers = {"cf-connecting-ip": "9.9.9.9", "x-forwarded-for": "1.2.3.4, 9.9.9.9, 10.0.0.1"}
+    request = type("R", (), {"headers": headers, "client": None})
+    assert router._caller(request) == "9.9.9.9"
+
+
+def test_x_real_ip_is_read_when_there_is_no_cloudflare():
+    headers = {"x-real-ip": "9.9.9.9", "x-forwarded-for": "1.2.3.4, 9.9.9.9"}
+    request = type("R", (), {"headers": headers, "client": None})
     assert router._caller(request) == "9.9.9.9"
 
 

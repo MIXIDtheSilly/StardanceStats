@@ -9,7 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from ...parsers.shop import REGIONS
 from ..deps import db as db_dep
 from ..examples import HISTORY, SHOP_ITEM, SHOP_LIST, SHOP_REGIONS, example
-from ..services import HistoryError, Interval, bucketed_series, stamp
+from ..services import HistoryError, Interval, bucketed_series, cached_count, stamp
 from ..services.history import parse_metrics
 
 router = APIRouter()
@@ -50,7 +50,7 @@ async def _as_of(db: AsyncIOMotorDatabase) -> datetime | None:
     return (doc or {}).get("last_crawled")
 
 
-@router.get("/shop", responses=example(SHOP_LIST))
+@router.get("/shop", responses=example(SHOP_LIST), response_model=None)
 async def list_shop_items(
     region: str | None = Query(None, description="US, EU, UK, IN, CA, AU or XX."),
     category: str | None = None,
@@ -80,7 +80,7 @@ async def list_shop_items(
     if code and sort == "price":
         field = f"prices.{code}"
 
-    total = await db.shop_items.count_documents(query)
+    total = await cached_count(db, "shop_items", query)
     cursor = (
         db.shop_items.find(query)
         .sort([(field, 1 if order == "asc" else -1)])
@@ -101,7 +101,7 @@ async def list_shop_items(
     )
 
 
-@router.get("/shop/regions", responses=example(SHOP_REGIONS))
+@router.get("/shop/regions", responses=example(SHOP_REGIONS), response_model=None)
 async def shop_regions(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """Catalogue size and price range per region."""
     rows = await db.shop_items.aggregate([
@@ -141,7 +141,7 @@ async def shop_regions(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, 
     return stamp({"regions": out}, await _as_of(db))
 
 
-@router.get("/shop/{item_id}", responses=example(SHOP_ITEM))
+@router.get("/shop/{item_id}", responses=example(SHOP_ITEM), response_model=None)
 async def get_shop_item(
     item_id: int,
     region: str | None = None,
@@ -154,7 +154,7 @@ async def get_shop_item(
     return stamp(_priced(doc, _region(region)), doc.get("last_crawled"))
 
 
-@router.get("/shop/{item_id}/history", responses=example(HISTORY))
+@router.get("/shop/{item_id}/history", responses=example(HISTORY), response_model=None)
 async def get_shop_item_history(
     item_id: int,
     metrics: str = Query("price_us", description="Comma-separated; see /v1/meta."),

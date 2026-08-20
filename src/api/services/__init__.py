@@ -1,3 +1,4 @@
+from .counting import cached_count, total_documents
 from .freshness import freshness, stamp
 from .history import (
     HistoryError,
@@ -12,7 +13,9 @@ __all__ = [
     "Interval",
     "METRICS",
     "bucketed_series",
+    "cached_count",
     "freshness",
     "latest_snapshot",
     "stamp",
+    "total_documents",
 ]

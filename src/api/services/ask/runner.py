@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime
 from typing import Any
@@ -17,6 +18,23 @@ log = logging.getLogger(__name__)
 MAX_CELL = 1200
 
 _client: AsyncIOMotorClient | None = None
+_gate: asyncio.Semaphore | None = None
+
+
+class QueryBusy(Exception):
+    """More at once than this box answers; not an AskError, as no repair helps a queue."""
+
+
+class QueryTooSlow(AskError):
+    """Spent its whole time budget, and is caught before AskError so it is not retried."""
+
+
+def _semaphore() -> asyncio.Semaphore:
+    """Nothing can price a pipeline, so bound how many run rather than how big they are."""
+    global _gate
+    if _gate is None:
+        _gate = asyncio.Semaphore(max(1, settings.ask_concurrency))
+    return _gate
 
 
 def get_client() -> AsyncIOMotorClient:
@@ -32,15 +50,26 @@ def get_client() -> AsyncIOMotorClient:
 
 
 async def close() -> None:
-    global _client
+    global _client, _gate
     if _client is not None:
         _client.close()
         _client = None
+    _gate = None
 
 
 async def run(collection: str, pipeline: list[dict[str, Any]], *, limit: int) -> list[dict]:
     """Run a validated pipeline, and turn a database refusal into a readable one."""
     db = get_client()[settings.mongo_db]
+    # Held, not looked up again: shutdown may replace it while this query runs.
+    gate = _semaphore()
+    try:
+        await asyncio.wait_for(gate.acquire(), settings.ask_queue_wait)
+    except asyncio.TimeoutError as exc:
+        log.warning("ask queue full, refused a query on %s", collection)
+        raise QueryBusy(
+            "too many questions are being answered at once; try again in a moment"
+        ) from exc
+
     try:
         cursor = db[collection].aggregate(
             pipeline,
@@ -50,8 +79,14 @@ async def run(collection: str, pipeline: list[dict[str, Any]], *, limit: int) ->
         )
         rows = await cursor.to_list(length=limit)
     except ExecutionTimeout as exc:
-        raise AskError(
-            "the query ran past its time limit; narrow it or group over less"
+        log.warning(
+            "ask query timed out on %s after %sms",
+            collection,
+            settings.ask_query_timeout_ms,
+        )
+        raise QueryTooSlow(
+            "that question reads more than this database will do in one go; "
+            "narrow it to a person, a project or a date range"
         ) from exc
     except OperationFailure as exc:
         # The message names what it refused, which is what a repair turn needs.
@@ -59,6 +94,8 @@ async def run(collection: str, pipeline: list[dict[str, Any]], *, limit: int) ->
     except PyMongoError as exc:
         log.warning("ask query failed on %s: %s", collection, exc)
         raise AskError(f"the query could not run: {exc}") from exc
+    finally:
+        gate.release()
 
     return [jsonable(row) for row in rows]
 

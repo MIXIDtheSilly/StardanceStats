@@ -7,6 +7,23 @@ import type { Actions } from './$types';
 const MIN_QUESTION = 3;
 const MAX_QUESTION = 400;
 
+const FORWARDED = ['cf-connecting-ip', 'x-real-ip', 'x-forwarded-for'];
+
+function caller(request: Request, socket: () => string): Record<string, string> {
+	const headers: Record<string, string> = {};
+	for (const name of FORWARDED) {
+		const value = request.headers.get(name);
+		if (value) headers[name] = value;
+	}
+	if (Object.keys(headers).length) return headers;
+
+	try {
+		return { 'x-forwarded-for': socket() };
+	} catch {
+		return {};
+	}
+}
+
 export const actions: Actions = {
 	default: async ({ request, fetch, getClientAddress }) => {
 		const form = await request.formData();
@@ -23,7 +40,7 @@ export const actions: Actions = {
 				fetch,
 				'/ask',
 				{ question },
-				getClientAddress()
+				caller(request, getClientAddress)
 			);
 			return { question, answer };
 		} catch (error) {

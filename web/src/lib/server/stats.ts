@@ -43,13 +43,13 @@ export async function statsPost<T>(
 	fetcher: typeof fetch,
 	path: string,
 	body: unknown,
-	caller?: string
+	caller: Record<string, string> = {}
 ): Promise<T> {
 	const headers: Record<string, string> = {
 		accept: 'application/json',
-		'content-type': 'application/json'
+		'content-type': 'application/json',
+		...caller
 	};
-	if (caller) headers['x-forwarded-for'] = caller;
 
 	const response = await fetcher(statsUrl(path), {
 		method: 'POST',

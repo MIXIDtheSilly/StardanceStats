@@ -17,7 +17,7 @@ router = APIRouter()
 GLOBAL_METRICS = METRICS["global"].metrics
 
 
-@router.get("/global", responses=example(GLOBAL))
+@router.get("/global", responses=example(GLOBAL), response_model=None)
 async def get_global(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, Any]:
     """The most recent platform rollup: what we hold, summed."""
     latest = await latest_snapshot(db, "global", SCOPE)
@@ -30,7 +30,7 @@ async def get_global(db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict[str, An
     return stamp({"scope": SCOPE, "totals": latest}, ts)
 
 
-@router.get("/global/history", responses=example(HISTORY))
+@router.get("/global/history", responses=example(HISTORY), response_model=None)
 async def get_global_history(
     metrics: str = Query(
         "users,projects,devlogs,hours,stardust_paid",

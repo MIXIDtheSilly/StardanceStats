@@ -109,7 +109,12 @@ class Settings(BaseSettings):
 
     # Every tier comes back within 6 h, so a gap twice that means something stalled.
     api_stale_after_hours: float = 12.0
+    # How long a read is held in memory and advertised as fresh; 0 holds nothing.
     api_cache_seconds: int = 300
+    # Under the 30s healthcheck interval, so a poll still reaches Mongo.
+    api_cache_health_seconds: int = 10
+    api_cache_entries: int = 512
+    api_cache_max_bytes: int = 4 * 1024 * 1024
 
     # The Ask tab. A model writes the query, so it runs as a user that can only read.
     ask_mongo_url: str = ""
@@ -122,6 +127,9 @@ class Settings(BaseSettings):
     ask_max_question: int = 400
     ask_max_rows: int = 200
     ask_query_timeout_ms: int = 8000
+    # The guard refuses a dangerous query; nothing prices an expensive one but this.
+    ask_concurrency: int = 1
+    ask_queue_wait: float = 5.0
     ask_retries: int = 1
     ask_rate_limit: int = 20
     # Every question spends our model budget, so the site may ask and the public
