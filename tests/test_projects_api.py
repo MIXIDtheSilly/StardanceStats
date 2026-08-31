@@ -267,6 +267,12 @@ async def test_an_unknown_sort_is_refused(client, posts):
     response = await client.get("/v1/projects/1/devlogs", params={"sort": "nonsense"})
     assert response.status_code == 422
 
+async def test_gone_projects_remain_searchable(db, client):
+    await db.projects.update_one({"_id": 2}, {"$set": {"gone": True}})
+
+    items = (await search(client, "Crawler"))["items"]
+
+    assert any(item["title"] == "Crawler" for item in items)
 
 async def test_tied_rows_do_not_repeat_or_vanish_across_pages(db, client, posts):
     """Every row shares a like count, so only the tiebreak keeps paging honest."""

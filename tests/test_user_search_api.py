@@ -104,6 +104,31 @@ async def test_results_carry_the_numbers_a_ranking_shows(client):
 async def test_regex_characters_are_matched_literally(client):
     assert (await search(client, "mixid."))["total"] == 0
 
+async def test_gone_projects_stay_off_user_profiles(db, client):
+    await db.projects.insert_many(
+        [
+            {
+                "_id": 100,
+                "title": "Still here",
+                "owner_id": 1,
+                "stats": {"stardust_total": 100},
+            },
+            {
+                "_id": 101,
+                "title": "Deleted upstream",
+                "owner_id": 1,
+                "gone": True,
+                "stats": {"stardust_total": 200},
+            },
+        ]
+    )
+
+    response = await client.get("/v1/users/mixidmb/projects")
+    assert response.status_code == 200
+
+    page = response.json()
+    assert page["total"] == 1
+    assert [project["title"] for project in page["items"]] == ["Still here"]
 
 async def test_hidden_people_stay_out(db, client):
     await db.users.insert_one(

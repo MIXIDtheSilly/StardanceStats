@@ -262,6 +262,7 @@ async def ingest_project(
         "banner_url": project.get("banner_url"),
         "owner_avatar_url": project.get("owner_avatar_url"),
         "stats": stats,
+        "gone": False,
         "last_crawled": now,
     }
     if first_ingest:

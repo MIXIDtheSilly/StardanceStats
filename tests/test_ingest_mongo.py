@@ -186,6 +186,20 @@ async def test_super_star_is_persisted(db, parsed):
     assert project["super_star_at"] == datetime(2026, 6, 16, 12, 22, 56, tzinfo=UTC)
     assert project["super_star_by"] == "cskartikey"
 
+async def test_successful_ingest_restores_a_gone_project(db, parsed):
+    first = datetime(2026, 8, 3, 20, 0, tzinfo=UTC)
+
+    await ingest_project(db, parsed, now=first)
+
+    await db.projects.update_one(
+        {"_id": 8100},
+        {"$set": {"gone": True}},
+    )
+
+    await ingest_project(db, parsed, now=first + timedelta(hours=1))
+
+    project = await db.projects.find_one({"_id": 8100})
+    assert project["gone"] is False
 
 async def test_award_details_survive_the_card_ageing_off_the_timeline(db, parsed):
     """The badge outlives the event card, so the date must not be blanked."""

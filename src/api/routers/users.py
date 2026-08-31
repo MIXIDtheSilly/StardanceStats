@@ -146,10 +146,13 @@ async def get_user(ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)) -> dict
 async def get_user_projects(
     ref: str, db: AsyncIOMotorDatabase = Depends(db_dep)
 ) -> dict[str, Any]:
-    """Projects this user owns or is a member of, richest first."""
+    """Active projects this user owns or is a member of, richest first."""
     user = await _find_user(db, ref)
     cursor = db.projects.find(
-        {"$or": [{"owner_id": user["_id"]}, {"member_ids": user["_id"]}]}
+        {
+            "$or": [{"owner_id": user["_id"]}, {"member_ids": user["_id"]}],
+            "gone": {"$ne": True},
+        }
     ).sort([("stats.stardust_total", -1)])
     items = await cursor.to_list(length=200)
     return stamp(
