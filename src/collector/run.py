@@ -38,6 +38,10 @@ OWNER_RESOLVE_LIMIT = 100
 # How far past the highest id known to be real the scan keeps probing.
 ID_SCAN_MARGIN = 1000
 
+# How many ids past the newest real one are looked at again every pass. They
+# 404 until someone creates them, and a 404 otherwise retires a row for good.
+ID_RECHECK_WINDOW = 100
+
 # Threads run in their own lane. Sharing one would starve them: they are queued
 # at priority 1 with next_due=now, so they sort behind every overdue page.
 THREAD_KINDS = ("devlog",)
@@ -333,9 +337,13 @@ async def extend_scan(db: AsyncIOMotorDatabase) -> dict[str, Any]:
     out = {}
     for kind in ("project", "user"):
         out[kind] = await frontier.extend_scan(db, kind, margin=ID_SCAN_MARGIN)
+        out[kind]["recheck"] = await frontier.recheck_unborn(
+            db, kind, window=ID_RECHECK_WINDOW
+        )
     seeded = sum(v["seeded"] for v in out.values())
-    if seeded:
-        log.info("id scan queued %d new rows: %s", seeded, out)
+    revived = sum(v["recheck"]["revived"] for v in out.values())
+    if seeded or revived:
+        log.info("id scan queued %d new rows, revived %d: %s", seeded, revived, out)
     return out
 
 

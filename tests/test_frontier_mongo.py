@@ -437,3 +437,60 @@ async def test_a_tail_of_dead_ids_cannot_ratchet_the_ceiling(db):
         again = await frontier.extend_scan(db, "project", margin=5, now=NOW)
         assert again["seeded"] == 0
         assert again["covered_to"] == first["covered_to"]
+
+
+async def test_an_id_that_404d_before_it_existed_is_looked_at_again(db):
+    """The scan probes past the newest project, so those ids 404 until created."""
+    await db.projects.insert_one({"_id": 40})
+    await frontier.seed_id_range(db, "project", 41, 42, now=NOW)
+    for ref_id in (41, 42):
+        await frontier.record_crawl(db, "project", ref_id, status="gone", now=NOW)
+    assert await frontier.due(db, kind="project", now=NOW + timedelta(days=2)) == []
+
+    result = await frontier.recheck_unborn(db, "project", window=5, now=NOW)
+
+    assert result["revived"] == 2
+    rows = await frontier.due(db, kind="project", now=NOW)
+    assert [r["ref_id"] for r in rows] == [41, 42]
+
+
+async def test_the_window_past_the_head_is_looked_at_every_pass(db):
+    await db.projects.insert_one({"_id": 40})
+    await frontier.seed_id_range(db, "project", 41, 50, now=NOW)
+    for _ in range(3):
+        for ref_id in range(41, 51):
+            await frontier.record_crawl(db, "project", ref_id, status="gone", now=NOW)
+        result = await frontier.recheck_unborn(db, "project", window=5, now=NOW)
+
+        assert result["revived"] == 5  # 41..45; 46..50 wait for the head to move
+
+
+async def test_ids_the_head_jumped_past_get_one_more_look(db):
+    """A listed project far ahead must not strand the drafts created below it."""
+    await db.projects.insert_one({"_id": 40})
+    await frontier.seed_id_range(db, "project", 41, 90, now=NOW)
+    await frontier.record_crawl(db, "project", 60, status="gone", now=NOW)
+    await frontier.recheck_unborn(db, "project", window=5, now=NOW)
+    await frontier.record_crawl(db, "project", 60, status="gone", now=NOW)
+
+    await db.projects.insert_one({"_id": 80})
+    first = await frontier.recheck_unborn(db, "project", window=5, now=NOW)
+    await frontier.record_crawl(db, "project", 60, status="gone", now=NOW)
+    second = await frontier.recheck_unborn(db, "project", window=5, now=NOW)
+
+    assert first["revived"] == 1
+    assert second["revived"] == 0  # still 404 once passed, so it really is gone
+
+
+async def test_a_deleted_or_blacklisted_page_stays_retired(db):
+    await db.projects.insert_one({"_id": 41, "gone": True})
+    await frontier.record_crawl(db, "project", 41, status="gone", now=NOW)
+    await frontier.record_crawl(db, "project", 42, status="ok", now=NOW)
+    await db.crawl_frontier.update_one(
+        {"_id": "project:42"}, {"$set": {"gone": True, "last_status": "blacklisted"}}
+    )
+
+    result = await frontier.recheck_unborn(db, "project", window=5, now=NOW)
+
+    assert result["revived"] == 0
+    assert await frontier.due(db, kind="project", now=NOW + timedelta(days=2)) == []

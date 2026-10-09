@@ -132,6 +132,52 @@ async def extend_scan(
     return {**result, "covered_to": ceiling}
 
 
+async def recheck_unborn(
+    db: AsyncIOMotorDatabase, kind: str, *, window: int, now: datetime | None = None
+) -> dict[str, Any]:
+    """Re-queue ids that 404'd only because the scan reached them before they existed.
+
+    A 404 retires a row for good, but the scan probes ids ahead of the newest
+    real one. Ids the head has passed since the last pass get one more look, and
+    the window just past the head is looked at every pass.
+    """
+    now = now or utcnow()
+    state = await db.crawl_state.find_one({"_id": SCAN_STATE_ID}) or {}
+    head_key = f"{kind}_head"
+    # No marker yet means rows retired before this pass existed, so look at all of them.
+    previous = int(state.get(head_key) or 0)
+    head = await max_ingested_id(db, kind)
+
+    ids = await db.crawl_frontier.distinct("ref_id", {
+        "kind": kind,
+        "gone": True,
+        # Blacklisted rows are retired too, but under their own status.
+        "last_status": "gone",
+        "ref_id": {"$gt": previous, "$lte": head + window},
+    })
+    # A page we once held and then lost was really deleted.
+    real = set(await db[SCAN_COLLECTION[kind]].distinct("_id", {"_id": {"$in": ids}}))
+    unborn = sorted(set(ids) - real)
+
+    revived = 0
+    if unborn:
+        result = await db.crawl_frontier.update_many(
+            {"kind": kind, "ref_id": {"$in": unborn}, "gone": True},
+            {"$set": {
+                "gone": False,
+                "tier": "cold",
+                "priority": priority("cold", kind),
+                "next_due": now,
+            }},
+        )
+        revived = result.modified_count
+
+    await db.crawl_state.update_one(
+        {"_id": SCAN_STATE_ID}, {"$set": {head_key: head}}, upsert=True
+    )
+    return {"kind": kind, "head": head, "revived": revived}
+
+
 async def seed_id_range(
     db: AsyncIOMotorDatabase,
     kind: str,
